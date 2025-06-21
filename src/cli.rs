@@ -4,8 +4,8 @@ use crate::core::parser::TweeParser;
 use crate::core::story::{Passage, StoryData, StoryFormat};
 use crate::util::file::collect_files;
 use clap::{Parser, Subcommand};
+use indexmap::IndexMap;
 use notify::{EventKind, RecursiveMode};
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use tracing::{debug, error, info, warn};
@@ -42,7 +42,7 @@ pub struct Cli {
 pub struct FileInfo {
     pub path: PathBuf,
     pub modified: SystemTime,
-    pub passages: HashMap<String, Passage>,
+    pub passages: IndexMap<String, Passage>,
     pub story_data: Option<StoryData>,
 }
 
@@ -52,7 +52,7 @@ pub struct BuildContext {
     pub format_name: String,
     pub format_version: String,
     /// Cache parsed file contents with modification times
-    pub file_cache: HashMap<PathBuf, FileInfo>,
+    pub file_cache: IndexMap<PathBuf, FileInfo>,
 }
 
 impl Default for BuildContext {
@@ -67,7 +67,7 @@ impl BuildContext {
             story_format: None,
             format_name: String::new(),
             format_version: String::new(),
-            file_cache: HashMap::new(),
+            file_cache: IndexMap::new(),
         }
     }
 
@@ -87,7 +87,7 @@ impl BuildContext {
     pub fn update_cache(
         &mut self,
         path: PathBuf,
-        passages: HashMap<String, Passage>,
+        passages: IndexMap<String, Passage>,
         story_data: Option<StoryData>,
     ) -> Result<(), std::io::Error> {
         let metadata = std::fs::metadata(&path)?;
@@ -105,8 +105,8 @@ impl BuildContext {
     }
 
     /// Get cached passages and story data from all files
-    pub fn get_all_cached_data(&self) -> (HashMap<String, Passage>, Option<StoryData>) {
-        let mut all_passages = HashMap::new();
+    pub fn get_all_cached_data(&self) -> (IndexMap<String, Passage>, Option<StoryData>) {
+        let mut all_passages = IndexMap::new();
         let mut story_data = None;
 
         for file_info in self.file_cache.values() {
@@ -161,10 +161,11 @@ async fn build_once(
         return Err("No support files found in the specified sources".into());
     }
 
-    let mut all_passages = HashMap::new();
+    let mut all_passages = IndexMap::new();
     let mut story_data = None;
     let mut modified_files = Vec::new();
 
+    // First pass: process modified files and update cache
     for file_path in &files {
         if context.is_file_modified(file_path)? {
             if is_rebuild {
@@ -187,7 +188,7 @@ async fn build_once(
                             .unwrap_or("script")
                             .to_string();
                         debug!("Creating JS passage with name: {}", passage_name);
-                        let mut passages = HashMap::new();
+                        let mut passages = IndexMap::new();
                         let passage = Passage {
                             name: passage_name.clone(),
                             tags: Some("script".to_string()),
@@ -210,7 +211,7 @@ async fn build_once(
                             .unwrap_or("stylesheet")
                             .to_string();
                         debug!("Creating CSS passage with name: {}", passage_name);
-                        let mut passages = HashMap::new();
+                        let mut passages = IndexMap::new();
                         let passage = Passage {
                             name: passage_name.clone(),
                             tags: Some("stylesheet".to_string()),
@@ -241,37 +242,26 @@ async fn build_once(
 
             context.update_cache(file_path.clone(), passages.clone(), file_story_data.clone())?;
 
-            for (name, passage) in passages {
-                debug!(
-                    "Adding passage to all_passages: {} with tags: {:?}",
-                    name, passage.tags
-                );
-                all_passages.insert(name, passage);
-            }
-
             if story_data.is_none() && file_story_data.is_some() {
                 story_data = file_story_data;
             }
         }
     }
 
-    if modified_files.is_empty() {
-        debug!("No files modified, using cached data");
-        let (cached_passages, cached_story_data) = context.get_all_cached_data();
+    // Second pass: build all_passages in correct file order
+    for file_path in &files {
+        if let Some(file_info) = context.file_cache.get(file_path) {
+            for (name, passage) in &file_info.passages {
+                debug!(
+                    "Adding passage to all_passages in order: {} from file {:?} with tags: {:?}",
+                    name, file_path, passage.tags
+                );
+                all_passages.insert(name.clone(), passage.clone());
+            }
 
-        for (name, passage) in cached_passages {
-            all_passages.entry(name).or_insert(passage);
-        }
-        story_data = cached_story_data;
-    } else {
-        let (cached_passages, cached_story_data) = context.get_all_cached_data();
-
-        for (name, passage) in cached_passages {
-            all_passages.entry(name).or_insert(passage);
-        }
-
-        if story_data.is_none() && cached_story_data.is_some() {
-            story_data = cached_story_data;
+            if story_data.is_none() && file_info.story_data.is_some() {
+                story_data = file_info.story_data.clone();
+            }
         }
     }
 

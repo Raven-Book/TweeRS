@@ -1,5 +1,5 @@
 use crate::core::story::{Passage, StoryData, StoryFormat};
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use tracing::debug;
 
 // Struct to reduce function parameters
@@ -16,7 +16,7 @@ pub struct HtmlOutputHandler;
 
 impl HtmlOutputHandler {
     pub async fn generate_html(
-        passages: &HashMap<String, Passage>,
+        passages: &IndexMap<String, Passage>,
         story_data: &Option<StoryData>,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let data = story_data.as_ref().ok_or("StoryData is required")?;
@@ -69,7 +69,7 @@ impl HtmlOutputHandler {
 
     /// Only update the pages of modified files
     pub async fn update_html(
-        passages: &HashMap<String, Passage>,
+        passages: &IndexMap<String, Passage>,
         story_data: &Option<StoryData>,
         context: &mut crate::cli::BuildContext,
     ) -> Result<String, Box<dyn std::error::Error>> {
@@ -140,7 +140,7 @@ impl HtmlOutputHandler {
 
     /// Generate HTML using cached story format (avoid repeated format file lookups)
     fn generate_html_with_cached_format(
-        passages: &HashMap<String, Passage>,
+        passages: &IndexMap<String, Passage>,
         story_data: &StoryData,
         context: &crate::cli::BuildContext,
     ) -> Result<String, Box<dyn std::error::Error>> {
@@ -193,7 +193,7 @@ impl HtmlOutputHandler {
 
     /// Generate Twine 2 data chunk following tweego format exactly
     fn get_twine2_data_chunk(
-        passages: &HashMap<String, Passage>,
+        passages: &IndexMap<String, Passage>,
         story_info: &StoryInfo,
         story_data: &StoryData,
     ) -> Result<String, Box<dyn std::error::Error>> {

@@ -1,6 +1,6 @@
 use crate::core::story::{Passage, StoryData};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use tracing::debug;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -11,12 +11,12 @@ struct PassageMetadata {
 
 // Type aliases to reduce complexity
 type PassageHeader = (String, Option<String>, Option<String>, Option<String>);
-type ParseResult = Result<(HashMap<String, Passage>, Option<StoryData>), String>;
+type ParseResult = Result<(IndexMap<String, Passage>, Option<StoryData>), String>;
 
 // Struct to reduce function parameters
 struct PassageContext<'a> {
     story_title: &'a mut Option<String>,
-    passages: &'a mut HashMap<String, Passage>,
+    passages: &'a mut IndexMap<String, Passage>,
     story_data: &'a mut Option<StoryData>,
 }
 
@@ -29,7 +29,7 @@ impl TweeParser {
             "Starting to parse content with {} lines",
             content.lines().count()
         );
-        let mut passages = HashMap::new();
+        let mut passages = IndexMap::new();
         let mut story_data = None;
         let mut story_title: Option<String> = None;
 
