@@ -26,7 +26,7 @@ tweers build <source_dir> -o <output_dir>
 
 
 ## Features
-- [ ] 增加正则匹配模块并JS注入模板
+- [ ] 增加正则匹配模块与JS注入模板
 - [ ] 支持 import/export 语法, 以控制 JavaScript/CSS 资源加载顺序
 - [ ] 修复文件监听和异步处理中的逻辑问题
 - [ ] 重构项目架构以支持 NPM 包管理
