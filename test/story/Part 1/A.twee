@@ -1,0 +1,16 @@
+:: StoryData
+{
+  "ifid": "8A4C850D-1FA3-4EFA-AD10-1AD05DC71E4D",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: Chapter1Start
+This is the start of chapter 1.
+
+[[Continue->Chapter1Next]]
+
+:: Chapter1Next
+This is the next part of chapter 1.
+
+[[Back to start->Chapter1Start]]

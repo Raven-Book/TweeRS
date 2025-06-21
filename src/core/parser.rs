@@ -70,11 +70,6 @@ impl TweeParser {
             Self::save_passage(name, tags, position, size, &current_content, &mut context)?;
         }
 
-        if let Some(ref mut data) = story_data {
-            data.validate()
-                .map_err(|e| std::format!("StoryData validation failed: {}", e))?;
-        }
-
         Ok((passages, story_data))
     }
 
@@ -98,10 +93,7 @@ impl TweeParser {
         if name == "StoryData" {
             debug!("Processing StoryData with content: {:?}", content);
             match serde_json::from_str::<StoryData>(&content) {
-                Ok(mut data) => {
-                    if let Some(title) = context.story_title {
-                        data.name = Some(title.clone());
-                    }
+                Ok(data) => {
                     *context.story_data = Some(data);
                 }
                 Err(e) => {
@@ -113,7 +105,15 @@ impl TweeParser {
                 }
             }
         } else if name == "StoryTitle" {
-            *context.story_title = Some(content);
+            *context.story_title = Some(content.clone());
+            let passage = Passage {
+                name: name.clone(),
+                tags,
+                position,
+                size,
+                content,
+            };
+            context.passages.insert(name, passage);
         } else {
             let passage = Passage {
                 name: name.clone(),

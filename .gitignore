@@ -21,4 +21,4 @@ target/
 .idea/
 
 # Twine Specs Markdown
-twine-specs/
+references/**

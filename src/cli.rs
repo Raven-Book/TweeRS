@@ -272,6 +272,18 @@ async fn build_once(
         }
     }
 
+    // Extract StoryTitle from all passages and set it on StoryData
+    if let Some(ref mut data) = story_data {
+        if let Some(title_passage) = all_passages.get("StoryTitle") {
+            data.name = Some(title_passage.content.clone());
+            debug!("Set story name from StoryTitle passage: {:?}", data.name);
+        }
+
+        // Validate StoryData after all files have been processed
+        data.validate()
+            .map_err(|e| std::format!("StoryData validation failed: {}", e))?;
+    }
+
     if all_passages.is_empty() {
         return Err("No passages found in any files".into());
     }

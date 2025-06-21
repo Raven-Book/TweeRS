@@ -1,0 +1,12 @@
+:: StoryTitle
+My Test Story
+
+:: Chapter2Start
+This is the start of chapter 2.
+
+[[Continue->Chapter2Next]]
+
+:: Chapter2Next
+This is the next part of chapter 2.
+
+[[Back to start->Chapter2Start]]
