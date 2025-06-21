@@ -1,5 +1,5 @@
 use crate::config::constants;
-use std::path::{PathBuf};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs as async_fs;
 use tokio::sync::Mutex;
@@ -7,7 +7,7 @@ use tokio::task::JoinSet;
 use tracing::{debug, info};
 
 /// Check if the file is a support file
-pub fn is_support_file(path: &PathBuf) -> bool {
+pub fn is_support_file(path: &Path) -> bool {
     if let Some(extension) = path.extension() {
         let ext_str = extension.to_string_lossy().to_lowercase();
         let ext_str = ext_str.as_str();
@@ -121,10 +121,11 @@ mod tests {
             .init();
 
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut paths = Vec::new();
-        paths.push(project_root.join("test/story/Part 1"));
-        paths.push(project_root.join("test/story/Part 2"));
-        paths.push(project_root.join("test/story/A.twee"));
+        let paths = vec![
+            project_root.join("test/story/Part 1"),
+            project_root.join("test/story/Part 2"),
+            project_root.join("test/story/A.twee")
+        ];
 
         debug!("Project root directory: {:?}", project_root);
         debug!("Story directory path: {:?}", paths);

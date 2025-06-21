@@ -2,6 +2,16 @@ use crate::core::story::{Passage, StoryData, StoryFormat};
 use std::collections::HashMap;
 use tracing::debug;
 
+// Struct to reduce function parameters
+struct StoryInfo<'a> {
+    name: &'a str,
+    ifid: &'a str,
+    format: &'a str,
+    format_version: &'a str,
+    start_passage: &'a str,
+    zoom: f32,
+}
+
 pub struct HtmlOutputHandler;
 
 impl HtmlOutputHandler {
@@ -34,16 +44,15 @@ impl HtmlOutputHandler {
 
         let story_format = StoryFormat::find_format(format, format_version).await?;
 
-        let story_data_xml = Self::get_twine2_data_chunk(
-            passages,
+        let story_info = StoryInfo {
             name,
             ifid,
             format,
             format_version,
             start_passage,
             zoom,
-            data
-        )?;
+        };
+        let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, data)?;
 
         let html = story_format.source
             .replace("{{STORY_NAME}}", name)
@@ -89,17 +98,15 @@ impl HtmlOutputHandler {
 
                     let zoom = data.zoom.unwrap_or(1.0);
 
-                    
-                    let story_data_xml = Self::get_twine2_data_chunk(
-                        passages,
+                    let story_info = StoryInfo {
                         name,
                         ifid,
-                        &data.format,
-                        &data.format_version,
+                        format: &data.format,
+                        format_version: &data.format_version,
                         start_passage,
                         zoom,
-                        data
-                    )?;
+                    };
+                    let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, data)?;
 
                     let html = story_format.source
                         .replace("{{STORY_NAME}}", name)
@@ -154,16 +161,15 @@ impl HtmlOutputHandler {
 
             let zoom = story_data.zoom.unwrap_or(1.0);
 
-            let story_data_xml = Self::get_twine2_data_chunk(
-                passages,
+            let story_info = StoryInfo {
                 name,
                 ifid,
-                &story_data.format,
-                &story_data.format_version,
+                format: &story_data.format,
+                format_version: &story_data.format_version,
                 start_passage,
                 zoom,
-                story_data
-            )?;
+            };
+            let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, story_data)?;
 
             let html = story_format.source
                 .replace("{{STORY_NAME}}", name)
@@ -178,12 +184,7 @@ impl HtmlOutputHandler {
     /// Generate Twine 2 data chunk following tweego format exactly
     fn get_twine2_data_chunk(
         passages: &HashMap<String, Passage>,
-        story_name: &str,
-        ifid: &str,
-        format: &str,
-        format_version: &str,
-        start_passage: &str,
-        zoom: f32,
+        story_info: &StoryInfo,
         story_data: &StoryData
     ) -> Result<String, Box<dyn std::error::Error>> {
         let mut data = Vec::new();
@@ -285,7 +286,7 @@ impl HtmlOutputHandler {
                 ).as_bytes()
             );
 
-            if start_passage == passage.name {
+            if story_info.start_passage == passage.name {
                 start_id = pid.to_string();
             }
             pid += 1;
@@ -301,18 +302,18 @@ impl HtmlOutputHandler {
 
         let options = "";
 
-        let story_data_xml = format!(
+        let story_data_xml = std::format!(
             "<tw-storydata name={:?} startnode={:?} creator={:?} creator-version={:?} ifid={:?} zoom={:?} format={:?} format-version={:?} options={:?} hidden>{}</tw-storydata>",
-            story_name,
+            story_info.name,
             start_id,
             "TweeRS",
             "0.1.0",
-            ifid,
-            zoom.to_string(),
-            format,
-            format_version,
+            story_info.ifid,
+            story_info.zoom.to_string(),
+            story_info.format,
+            story_info.format_version,
             options,
-            String::from_utf8(data).map_err(|e| format!("UTF-8 conversion error: {}", e))?
+            String::from_utf8(data).map_err(|e| std::format!("UTF-8 conversion error: {}", e))?
         );
 
         Ok(story_data_xml)

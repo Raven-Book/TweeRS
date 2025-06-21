@@ -9,12 +9,23 @@ struct PassageMetadata {
     size: String,
 }
 
+// Type aliases to reduce complexity
+type PassageHeader = (String, Option<String>, Option<String>, Option<String>);
+type ParseResult = Result<(HashMap<String, Passage>, Option<StoryData>), String>;
+
+// Struct to reduce function parameters
+struct PassageContext<'a> {
+    story_title: &'a mut Option<String>,
+    passages: &'a mut HashMap<String, Passage>,
+    story_data: &'a mut Option<StoryData>,
+}
+
 pub struct TweeParser;
 
 impl TweeParser {
 
     /// Parse twee3 file content
-    pub fn parse(content: &str) -> Result<(HashMap<String, Passage>, Option<StoryData>), String> {
+    pub fn parse(content: &str) -> ParseResult {
         
         debug!("Starting to parse content with {} lines", content.lines().count());
         let mut passages = HashMap::new();
@@ -22,7 +33,7 @@ impl TweeParser {
         let mut story_title: Option<String> = None;
 
         
-        let mut current_passage: Option<(String, Option<String>, Option<String>, Option<String>)> = None;
+        let mut current_passage: Option<PassageHeader> = None;
 
         let mut current_content: Vec<&str> = Vec::new();
 
@@ -30,13 +41,12 @@ impl TweeParser {
             debug!("Processing line {}: {:?}", line_num + 1, line);
             if line.starts_with("::") {
                 if let Some((name, tags, position, size)) = current_passage.take() {
-                    Self::save_passage(
-                        name, tags, position, size,
-                        &current_content,
-                        &mut story_title,
-                        &mut passages,
-                        &mut story_data
-                    )?;
+                    let mut context = PassageContext {
+                        story_title: &mut story_title,
+                        passages: &mut passages,
+                        story_data: &mut story_data,
+                    };
+                    Self::save_passage(name, tags, position, size, &current_content, &mut context)?;
                     current_content.clear();
                 }
                 let header = line.trim_start_matches("::").trim();
@@ -52,13 +62,12 @@ impl TweeParser {
         }
 
         if let Some((name, tags, position, size)) = current_passage {
-            Self::save_passage(
-                name, tags, position, size,
-                &current_content,
-                &mut story_title,
-                &mut passages,
-                &mut story_data
-            )?;
+            let mut context = PassageContext {
+                story_title: &mut story_title,
+                passages: &mut passages,
+                story_data: &mut story_data,
+            };
+            Self::save_passage(name, tags, position, size, &current_content, &mut context)?;
         }
 
         if let Some(ref mut data) = story_data {
@@ -74,9 +83,7 @@ impl TweeParser {
         position: Option<String>,
         size: Option<String>,
         content_lines: &Vec<&str>,
-        story_title: &mut Option<String>,
-        passages: &mut HashMap<String, Passage>,
-        story_data: &mut Option<StoryData>,
+        context: &mut PassageContext,
     ) -> Result<(), String> {
         use tracing::debug;
         
@@ -87,15 +94,15 @@ impl TweeParser {
             debug!("Processing StoryData with content: {:?}", content);
             match serde_json::from_str::<StoryData>(&content) {
                 Ok(mut data) => {
-                    if let Some(title) = story_title {
+                    if let Some(title) = context.story_title {
                         data.name = Some(title.clone());
                     }
-                    *story_data = Some(data);
+                    *context.story_data = Some(data);
                 },
                 Err(e) => return Err(std::format!("Failed to parse StoryData JSON: {}. \nContent: '{}'", e, content)),
             }
         } else if name == "StoryTitle" {
-            *story_title = Some(content);
+            *context.story_title = Some(content);
         } else {
             let passage = Passage {
                 name: name.clone(),
@@ -104,13 +111,13 @@ impl TweeParser {
                 size,
                 content,
             };
-            passages.insert(name, passage);
+            context.passages.insert(name, passage);
         }
 
         Ok(())
     }
 
-    fn parse_header(header: &str) ->  Result<(String, Option<String>, Option<String>, Option<String>), String> {
+    fn parse_header(header: &str) -> Result<PassageHeader, String> {
 
         let mut chars = header.chars().peekable();
 

@@ -134,12 +134,9 @@ impl Ord for Version {
 }
 */
 
-
-
-/// Validate required fields
-
 impl StoryData {
 
+    /// Validate required fields
     pub fn validate(&self) -> Result<(), String> {
         if self.name.is_none() {
             return Err("Story name is required (missing StoryTitle passage?)".to_string());
