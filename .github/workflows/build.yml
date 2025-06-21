@@ -1,9 +1,8 @@
 name: Build and Release
 on:
   push:
-    paths:
-      - 'VERSION'
-    branches: [master]
+    tags:
+      - "v*.*.*"
   workflow_dispatch: {}
 
 jobs:
@@ -34,13 +33,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-        shell: bash
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -91,7 +83,7 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.event.head_commit.modified, 'VERSION')
+    if: github.ref_type == 'tag'
     permissions:
       contents: write
     
@@ -99,22 +91,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-        
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
+          pattern: "tweers-*"
+          merge-multiple: false
           
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
           files: |
             ./artifacts/tweers-linux.tar.gz/tweers-linux.tar.gz
             ./artifacts/tweers-macos.tar.gz/tweers-macos.tar.gz
