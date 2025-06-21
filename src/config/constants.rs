@@ -12,6 +12,9 @@ pub const STORY_FORMAT_DIR: &str = "story-format";
 /// Storage path for config.toml
 pub const CONFIG_FILE: &str = "config.toml";
 
+/// Log file path
+pub const LOG_FILE: &str = "tweers.log";
+
 /// Supported Twee extensions
 pub const TWEE_EXTENSIONS: &[&str] = &["twee", "tw"];
 

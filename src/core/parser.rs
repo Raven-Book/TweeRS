@@ -1,5 +1,6 @@
 use tracing::debug;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use crate::core::story::{Passage, StoryData};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,15 +14,14 @@ pub struct TweeParser;
 impl TweeParser {
 
     /// Parse twee3 file content
-    pub fn parse(content: &str) -> Result<(Vec<Passage>, Option<StoryData>), String> {
+    pub fn parse(content: &str) -> Result<(HashMap<String, Passage>, Option<StoryData>), String> {
         
         debug!("Starting to parse content with {} lines", content.lines().count());
-        let mut passages = Vec::new();
+        let mut passages = HashMap::new();
         let mut story_data = None;
         let mut story_title: Option<String> = None;
 
-
-        // (name, tag, position, size)
+        
         let mut current_passage: Option<(String, Option<String>, Option<String>, Option<String>)> = None;
 
         let mut current_content: Vec<&str> = Vec::new();
@@ -75,7 +75,7 @@ impl TweeParser {
         size: Option<String>,
         content_lines: &Vec<&str>,
         story_title: &mut Option<String>,
-        passages: &mut Vec<Passage>,
+        passages: &mut HashMap<String, Passage>,
         story_data: &mut Option<StoryData>,
     ) -> Result<(), String> {
         use tracing::debug;
@@ -97,13 +97,14 @@ impl TweeParser {
         } else if name == "StoryTitle" {
             *story_title = Some(content);
         } else {
-            passages.push(Passage {
-                name,
+            let passage = Passage {
+                name: name.clone(),
                 tags,
                 position,
                 size,
                 content,
-            });
+            };
+            passages.insert(name, passage);
         }
 
         Ok(())

@@ -1,46 +1,38 @@
-use std::path::PathBuf;
-use clap::{Parser, Subcommand};
+use tweers::cli::{build_command, Cli, Commands};
 use tracing::{error, info};
-use tracing_subscriber::EnvFilter;
+use clap::Parser;
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 use tweers::config::constants;
-use tweers::core::{parser::TweeParser, output::HtmlOutputHandler};
-
-#[derive(Subcommand)]
-#[command(version, about, long_about = None)]
-enum Commands {
-    /// Convert .twee/.tw files to HTML
-    Build {
-        /// Watch
-        #[clap(short)]
-        watch: bool,
-        /// Output path
-        #[clap(short, long, default_value = "index.html")]
-        dist: PathBuf,
-        /// Sources
-        #[arg(trailing_var_arg = true, required = true)]
-        sources: Vec<PathBuf>,
-    },
-
-    Zip {}
-}
-
-
-/// TweeRS Command
-#[derive(Parser)]
-#[command(about=None)]
-struct Cli {
-    #[command(subcommand)]
-    cmd: Commands
-}
-
+use std::fs::OpenOptions;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
-        .with_target(false)
-        .with_thread_ids(true)
-        .with_level(true)
+    
+    let log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(constants::LOG_FILE)
+        .expect("Failed to create log file");
+
+    tracing_subscriber::registry()
+        .with(
+            fmt::layer()
+                .with_target(false)
+                .with_thread_ids(false)
+                .with_level(true)
+                .with_filter(
+                    EnvFilter::try_from_default_env()
+                        .unwrap_or_else(|_| EnvFilter::new("info"))
+                )
+        )
+        .with(
+            fmt::layer()
+                .with_writer(log_file)
+                .with_target(false)
+                .with_thread_ids(false)
+                .with_level(true)
+                .with_filter(EnvFilter::new("debug"))
+        )
         .init();
 
     if let Err(e) = run().await {
@@ -54,7 +46,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
     match args.cmd {
         Commands::Build { watch, dist, sources } => {
-            build_command(sources, dist, watch)?;
+            build_command(sources, dist, watch).await?;
         }
         Commands::Zip {} => {
             info!("Zip command not implemented yet");
@@ -63,7 +55,3 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
-fn build_command(sources: Vec<PathBuf>, dist: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Error>> {
-    Ok(())
-}

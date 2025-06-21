@@ -1,0 +1,19 @@
+:: StoryTitle
+Test Story
+
+:: :: StoryData
+{
+  "ifid": "8A4C850D-1FA3-4EFA-AD10-1AD05DC71E4D",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: Start
+Welcome to the test story!
+
+[[Go to next passage->Next]]
+
+:: Next
+This is the next passage.
+
+[[Back to start->Start]]

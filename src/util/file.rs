@@ -1,6 +1,4 @@
 use crate::config::constants;
-use crate::core::story::{Passage, StoryData, StoryFormat};
-use std::fs;
 use std::path::{PathBuf};
 use std::sync::Arc;
 use tokio::fs as async_fs;
@@ -8,12 +6,12 @@ use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, info};
 
-/// Check if the file is a Twee file
-pub fn is_twee(path: &PathBuf) -> bool {
+/// Check if the file is a support file
+pub fn is_support_file(path: &PathBuf) -> bool {
     if let Some(extension) = path.extension() {
         let ext_str = extension.to_string_lossy().to_lowercase();
         let ext_str = ext_str.as_str();
-        return constants::TWEE_EXTENSIONS.contains(&ext_str);
+        return constants::TWEE_EXTENSIONS.contains(&ext_str) || ext_str == "js" || ext_str == "css";
     }
     false
 }
@@ -36,8 +34,8 @@ pub async fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>, std::io::E
             if metadata.is_dir() {
                 debug!("Processing directory: {:?}", path);
                 process_path(path, files_clone).await?
-            } else if is_twee(&path) {
-                debug!("Found twee file: {:?}", path);
+            } else if is_support_file(&path) {
+                debug!("Found support file: {:?}", path);
                 files_clone.lock().await.push(path);
             }
             Ok::<_, std::io::Error>(())
@@ -49,7 +47,7 @@ pub async fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>, std::io::E
     files.lock().await.sort();
     let result = Arc::try_unwrap(files).unwrap().into_inner();
     tracing::info!(
-        "File collection completed, found {} twee files",
+        "File collection completed, found {} support files",
         result.len()
     );
     Ok(result)
@@ -63,8 +61,8 @@ fn process_path(
         let metadata = tokio::fs::metadata(&path).await?;
 
         if metadata.is_file() {
-            if is_twee(&path) {
-                debug!("Adding twee file: {:?}", path);
+            if is_support_file(&path) {
+                debug!("Adding support file: {:?}", path);
                 files.lock().await.push(path);
             }
         } else if metadata.is_dir() {
