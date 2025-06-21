@@ -34,7 +34,8 @@ struct Cli {
 }
 
 
-fn main() {
+#[tokio::main]
+async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .with_target(false)
@@ -42,13 +43,13 @@ fn main() {
         .with_level(true)
         .init();
 
-    if let Err(e) = run() {
+    if let Err(e) = run().await {
         error!("{}", e);
         std::process::exit(1);
     }
 }
 
-fn run() -> Result<(), Box<dyn std::error::Error>> {
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     constants::init_constants();
     let args = Cli::parse();
     match args.cmd {

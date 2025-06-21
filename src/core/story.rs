@@ -4,7 +4,7 @@ use std::path::Path;
 use std::fs;
 use std::format;
 use regex::Regex;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 use tracing_subscriber::fmt::format;
 use crate::config::constants;
 

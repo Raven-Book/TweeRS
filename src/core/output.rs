@@ -1,35 +1,7 @@
 use crate::core::story::{Passage, StoryData, StoryFormat};
-use std::path::{Path, PathBuf};
-use std::fs;
-
 pub struct HtmlOutputHandler;
 
 impl HtmlOutputHandler {
-    /// Read file content
-    pub fn read_file(path: &Path) -> Result<String, std::io::Error> {
-        fs::read_to_string(path)
-    }
-
-    /// Write HTML file
-    pub fn write_html(path: &Path, content: &str) -> Result<(), std::io::Error> {
-        fs::write(path, content)
-    }
-
-/*
-    // TODO
-    pub fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>, std::io::Error> {
-        Err("".into())
-    }
-
-    pub fn merge_passages(all_passages: Vec<Passage>) -> (Vec<Passage>, Vec<String>) {
-    }
-
-    fn collect_files_recursive(dir: &Path, files: &mut Vec<PathBuf>) -> Result<(), std::io::Error> {
-        Ok(())
-    }
-*/
-
-
     pub fn generate_html(passages: &[Passage], story_data: &Option<StoryData>) -> Result<String, Box<dyn std::error::Error>> {
         let data = story_data.as_ref()
             .ok_or("StoryData passage is required")?;
