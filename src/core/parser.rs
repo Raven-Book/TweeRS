@@ -1,3 +1,4 @@
+use tracing::debug;
 use serde::{Deserialize, Serialize};
 use crate::core::story::{Passage, StoryData};
 
@@ -13,6 +14,8 @@ impl TweeParser {
 
     /// Parse twee3 file content
     pub fn parse(content: &str) -> Result<(Vec<Passage>, Option<StoryData>), String> {
+        
+        debug!("Starting to parse content with {} lines", content.lines().count());
         let mut passages = Vec::new();
         let mut story_data = None;
         let mut story_title: Option<String> = None;
@@ -23,7 +26,8 @@ impl TweeParser {
 
         let mut current_content: Vec<&str> = Vec::new();
 
-        for line in content.lines() {
+        for (line_num, line) in content.lines().enumerate() {
+            debug!("Processing line {}: {:?}", line_num + 1, line);
             if line.starts_with("::") {
                 if let Some((name, tags, position, size)) = current_passage.take() {
                     Self::save_passage(
@@ -36,7 +40,9 @@ impl TweeParser {
                     current_content.clear();
                 }
                 let header = line.trim_start_matches("::").trim();
+                debug!("Parsing header: {:?}", header);
                 let metadata = Self::parse_header(header)?;
+                debug!("Parsed metadata: {:?}", metadata);
                 current_passage = Some(metadata);
             } else if line.starts_with("\\::") {
                 current_content.push(line.trim_start_matches("\\").trim());
@@ -72,9 +78,13 @@ impl TweeParser {
         passages: &mut Vec<Passage>,
         story_data: &mut Option<StoryData>,
     ) -> Result<(), String> {
+        use tracing::debug;
+        
         let content = content_lines.join("\n").trim().to_string();
+        debug!("Saving passage '{}' with content length: {}", name, content.len());
 
         if name == "StoryData" {
+            debug!("Processing StoryData with content: {:?}", content);
             match serde_json::from_str::<StoryData>(&content) {
                 Ok(mut data) => {
                     if let Some(title) = story_title {
@@ -118,11 +128,15 @@ impl TweeParser {
             if escaped {
                 chars.next();
                 name.push(ch);
+                escaped = false;
             } else if ch == '\\' {
                 chars.next();
                 escaped = true;
             } else if ch == '[' || ch == '{' || ch == ' ' {
                 break;
+            } else {
+                chars.next();
+                name.push(ch);
             }
         }
 
