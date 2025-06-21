@@ -11,7 +11,9 @@ pub fn is_support_file(path: &Path) -> bool {
     if let Some(extension) = path.extension() {
         let ext_str = extension.to_string_lossy().to_lowercase();
         let ext_str = ext_str.as_str();
-        return constants::TWEE_EXTENSIONS.contains(&ext_str) || ext_str == "js" || ext_str == "css";
+        return constants::TWEE_EXTENSIONS.contains(&ext_str)
+            || ext_str == "js"
+            || ext_str == "css";
     }
     false
 }
@@ -124,7 +126,7 @@ mod tests {
         let paths = vec![
             project_root.join("test/story/Part 1"),
             project_root.join("test/story/Part 2"),
-            project_root.join("test/story/A.twee")
+            project_root.join("test/story/A.twee"),
         ];
 
         debug!("Project root directory: {:?}", project_root);

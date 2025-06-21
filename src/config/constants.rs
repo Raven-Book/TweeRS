@@ -18,10 +18,9 @@ pub const LOG_FILE: &str = "tweers.log";
 /// Supported Twee extensions
 pub const TWEE_EXTENSIONS: &[&str] = &["twee", "tw"];
 
-
 pub fn init_constants() {
-    let exe_path = std::env::current_exe()
-        .expect("Failed to get executable path");
-    EXECUTABLE_PATH.set(exe_path)
+    let exe_path = std::env::current_exe().expect("Failed to get executable path");
+    EXECUTABLE_PATH
+        .set(exe_path)
         .expect("EXECUTABLE_PATH has already been initialized");
 }

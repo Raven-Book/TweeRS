@@ -15,10 +15,15 @@ struct StoryInfo<'a> {
 pub struct HtmlOutputHandler;
 
 impl HtmlOutputHandler {
-    pub async fn generate_html(passages: &HashMap<String, Passage>, story_data: &Option<StoryData>) -> Result<String, Box<dyn std::error::Error>> {
+    pub async fn generate_html(
+        passages: &HashMap<String, Passage>,
+        story_data: &Option<StoryData>,
+    ) -> Result<String, Box<dyn std::error::Error>> {
         let data = story_data.as_ref().ok_or("StoryData is required")?;
 
-        let name = data.name.as_ref()
+        let name = data
+            .name
+            .as_ref()
             .ok_or("Story name is required (missing StoryTitle passage?)")?;
 
         let ifid = if data.ifid.is_empty() {
@@ -54,7 +59,8 @@ impl HtmlOutputHandler {
         };
         let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, data)?;
 
-        let html = story_format.source
+        let html = story_format
+            .source
             .replace("{{STORY_NAME}}", name)
             .replace("{{STORY_DATA}}", &story_data_xml);
 
@@ -63,21 +69,19 @@ impl HtmlOutputHandler {
 
     /// Only update the pages of modified files
     pub async fn update_html(
-        passages: &HashMap<String, Passage>, 
-        story_data: &Option<StoryData>, 
-        context: &mut crate::cli::BuildContext
+        passages: &HashMap<String, Passage>,
+        story_data: &Option<StoryData>,
+        context: &mut crate::cli::BuildContext,
     ) -> Result<String, Box<dyn std::error::Error>> {
-        
         if let Some(data) = story_data {
-            
-            let format_changed = context.format_name != data.format || 
-                                context.format_version != data.format_version;
-            
-            
+            let format_changed =
+                context.format_name != data.format || context.format_version != data.format_version;
+
             if !format_changed && context.story_format.is_some() {
-                
                 if let Some(story_format) = &context.story_format {
-                    let name = data.name.as_ref()
+                    let name = data
+                        .name
+                        .as_ref()
                         .ok_or("Story name is required (missing StoryTitle passage?)")?;
 
                     let ifid = if data.ifid.is_empty() {
@@ -86,7 +90,9 @@ impl HtmlOutputHandler {
                         &data.ifid
                     };
 
-                    let start_passage = data.start.as_deref()
+                    let start_passage = data
+                        .start
+                        .as_deref()
                         .or_else(|| {
                             if passages.contains_key("Start") {
                                 Some("Start")
@@ -108,39 +114,40 @@ impl HtmlOutputHandler {
                     };
                     let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, data)?;
 
-                    let html = story_format.source
+                    let html = story_format
+                        .source
                         .replace("{{STORY_NAME}}", name)
                         .replace("{{STORY_DATA}}", &story_data_xml);
 
                     return Ok(html);
                 }
             }
-            
-            
+
             if format_changed {
                 context.format_name = data.format.clone();
                 context.format_version = data.format_version.clone();
-                
-                let story_format = StoryFormat::find_format(&data.format, &data.format_version).await?;
+
+                let story_format =
+                    StoryFormat::find_format(&data.format, &data.format_version).await?;
                 context.story_format = Some(story_format);
-                
-                
+
                 return Self::generate_html_with_cached_format(passages, data, context);
             }
         }
-        
-        
+
         Self::generate_html(passages, story_data).await
     }
 
     /// Generate HTML using cached story format (avoid repeated format file lookups)
     fn generate_html_with_cached_format(
-        passages: &HashMap<String, Passage>, 
-        story_data: &StoryData, 
-        context: &crate::cli::BuildContext
+        passages: &HashMap<String, Passage>,
+        story_data: &StoryData,
+        context: &crate::cli::BuildContext,
     ) -> Result<String, Box<dyn std::error::Error>> {
         if let Some(story_format) = &context.story_format {
-            let name = story_data.name.as_ref()
+            let name = story_data
+                .name
+                .as_ref()
                 .ok_or("Story name is required (missing StoryTitle passage?)")?;
 
             let ifid = if story_data.ifid.is_empty() {
@@ -149,7 +156,9 @@ impl HtmlOutputHandler {
                 &story_data.ifid
             };
 
-            let start_passage = story_data.start.as_deref()
+            let start_passage = story_data
+                .start
+                .as_deref()
                 .or_else(|| {
                     if passages.contains_key("Start") {
                         Some("Start")
@@ -171,7 +180,8 @@ impl HtmlOutputHandler {
             };
             let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, story_data)?;
 
-            let html = story_format.source
+            let html = story_format
+                .source
                 .replace("{{STORY_NAME}}", name)
                 .replace("{{STORY_DATA}}", &story_data_xml);
 
@@ -185,7 +195,7 @@ impl HtmlOutputHandler {
     fn get_twine2_data_chunk(
         passages: &HashMap<String, Passage>,
         story_info: &StoryInfo,
-        story_data: &StoryData
+        story_data: &StoryData,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let mut data = Vec::new();
         let mut start_id = String::new();
@@ -204,19 +214,28 @@ impl HtmlOutputHandler {
             }
         }
 
-        debug!("Found {} script passages and {} stylesheet passages", scripts.len(), stylesheets.len());
+        debug!(
+            "Found {} script passages and {} stylesheet passages",
+            scripts.len(),
+            stylesheets.len()
+        );
 
         if !stylesheets.is_empty() {
-            data.extend_from_slice(b"<style role=\"stylesheet\" id=\"twine-user-stylesheet\" type=\"text/twine-css\">");
+            data.extend_from_slice(
+                b"<style role=\"stylesheet\" id=\"twine-user-stylesheet\" type=\"text/twine-css\">",
+            );
             if stylesheets.len() == 1 {
                 data.extend_from_slice(stylesheets[0].content.as_bytes());
             } else {
                 let mut pid = 1;
                 for passage in &stylesheets {
-                    if pid > 1 && !data.is_empty() && data[data.len()-1] != b'\n' {
+                    if pid > 1 && !data.is_empty() && data[data.len() - 1] != b'\n' {
                         data.push(b'\n');
                     }
-                    data.extend_from_slice(format!("/* twine-user-stylesheet #{}: {:?} */\n", pid, passage.name).as_bytes());
+                    data.extend_from_slice(
+                        format!("/* twine-user-stylesheet #{}: {:?} */\n", pid, passage.name)
+                            .as_bytes(),
+                    );
                     data.extend_from_slice(passage.content.as_bytes());
                     pid += 1;
                 }
@@ -225,16 +244,21 @@ impl HtmlOutputHandler {
         }
 
         if !scripts.is_empty() {
-            data.extend_from_slice(b"<script role=\"script\" id=\"twine-user-script\" type=\"text/twine-javascript\">");
+            data.extend_from_slice(
+                b"<script role=\"script\" id=\"twine-user-script\" type=\"text/twine-javascript\">",
+            );
             if scripts.len() == 1 {
                 data.extend_from_slice(scripts[0].content.as_bytes());
             } else {
                 let mut pid = 1;
                 for passage in &scripts {
-                    if pid > 1 && !data.is_empty() && data[data.len()-1] != b'\n' {
+                    if pid > 1 && !data.is_empty() && data[data.len() - 1] != b'\n' {
                         data.push(b'\n');
                     }
-                    data.extend_from_slice(format!("/* twine-user-script #{}: {:?} */\n", pid, passage.name).as_bytes());
+                    data.extend_from_slice(
+                        format!("/* twine-user-script #{}: {:?} */\n", pid, passage.name)
+                            .as_bytes(),
+                    );
                     data.extend_from_slice(passage.content.as_bytes());
                     pid += 1;
                 }
@@ -244,7 +268,9 @@ impl HtmlOutputHandler {
 
         if let Some(tag_colors) = &story_data.tag_colors {
             for (tag, color) in tag_colors {
-                data.extend_from_slice(format!("<tw-tag name={:?} color={:?}></tw-tag>", tag, color).as_bytes());
+                data.extend_from_slice(
+                    format!("<tw-tag name={:?} color={:?}></tw-tag>", tag, color).as_bytes(),
+                );
             }
         }
 
@@ -267,8 +293,8 @@ impl HtmlOutputHandler {
                 }
             }
 
-            
-            let escaped_content = passage.content
+            let escaped_content = passage
+                .content
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")

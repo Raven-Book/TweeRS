@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use std::path::Path;
-use std::format;
 use regex::Regex;
-use tracing::{debug};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::format;
+use std::path::Path;
+use tracing::debug;
 
 use crate::config::constants;
 
@@ -26,9 +26,8 @@ pub struct StoryData {
     #[serde(alias = "tag-colors")]
     pub tag_colors: Option<HashMap<String, String>>,
     /// Maps to <tw-storydata zoom>
-    pub zoom: Option<f32>
+    pub zoom: Option<f32>,
 }
-
 
 /// Passage
 #[derive(Debug, Clone)]
@@ -42,7 +41,7 @@ pub struct Passage {
     /// Comma-separated width and height of the passage when viewed within the Twine 2 editor
     pub size: Option<String>,
     /// The content of passage
-    pub content: String
+    pub content: String,
 }
 
 /*
@@ -70,7 +69,6 @@ pub struct StoryFormat {
     /// An adequately escaped string containing the full HTML output of the story format, including the two placeholders {{STORY_NAME}} and {{STORY_DATA}}
     pub source: String,
 
-    
     #[serde(default)]
     pub author: Option<String>,
     #[serde(default)]
@@ -135,7 +133,6 @@ impl Ord for Version {
 */
 
 impl StoryData {
-
     /// Validate required fields
     pub fn validate(&self) -> Result<(), String> {
         if self.name.is_none() {
@@ -155,7 +152,6 @@ impl StoryData {
 }
 
 impl StoryFormat {
-
     pub async fn load(path: &Path) -> Result<StoryFormat, Box<dyn std::error::Error>> {
         let content = tokio::fs::read_to_string(path).await?;
         Self::parse(&content)
@@ -166,7 +162,9 @@ impl StoryFormat {
         let re = Regex::new(r"window\.storyFormat\s*\(\s*(\{[\s\S]*}\s*)")?;
 
         if let Some(caps) = re.captures(content) {
-            let json = caps.get(1).ok_or("Failed to extract story format json from regex match".to_string())?;
+            let json = caps
+                .get(1)
+                .ok_or("Failed to extract story format json from regex match".to_string())?;
             let json_str = json.as_str();
             let story_format = serde_json::from_str(json_str)
                 .map_err(|e| format!("Failed to parse story format JSON: {}", e))?;
@@ -176,108 +174,166 @@ impl StoryFormat {
         }
     }
 
-
-    pub async fn find_format(story_format: &str, version: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let exe_path = constants::EXECUTABLE_PATH.get()
+    pub async fn find_format(
+        story_format: &str,
+        version: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let exe_path = constants::EXECUTABLE_PATH
+            .get()
             .ok_or("Executable path not initialized")?;
 
-        let parent_dir = exe_path.parent().ok_or("Failed to get parent directory".to_string())?;
+        let parent_dir = exe_path
+            .parent()
+            .ok_or("Failed to get parent directory".to_string())?;
         let format_dir = parent_dir.join(constants::STORY_FORMAT_DIR);
 
-        debug!("Searching for story format '{}' version '{}' in directory: {}", story_format, version, format_dir.display());
+        debug!(
+            "Searching for story format '{}' version '{}' in directory: {}",
+            story_format,
+            version,
+            format_dir.display()
+        );
 
         if !format_dir.exists() {
-            return Err(std::format!("Story formats directory not found: {}", format_dir.display()).into());
+            return Err(std::format!(
+                "Story formats directory not found: {}",
+                format_dir.display()
+            )
+            .into());
         }
 
         // First, try to find by directory name pattern: format-version
         let expected_dir_name = format!("{}-{}", story_format.to_lowercase(), version);
         let target_dir = format_dir.join(&expected_dir_name);
-        
+
         debug!("Looking for directory: {}", target_dir.display());
-        
+
         if target_dir.exists() && target_dir.is_dir() {
             let format_file = target_dir.join("format.js");
             if format_file.exists() {
-                debug!("Found format directory by name pattern: {}", expected_dir_name);
+                debug!(
+                    "Found format directory by name pattern: {}",
+                    expected_dir_name
+                );
                 return Self::load(&format_file).await;
             } else {
-                tracing::warn!("Directory '{}' exists but missing format.js file", expected_dir_name);
+                tracing::warn!(
+                    "Directory '{}' exists but missing format.js file",
+                    expected_dir_name
+                );
             }
         }
 
         // Fallback: scan all directories and warn about non-standard naming
-        let mut entries = tokio::fs::read_dir(&format_dir).await
+        let mut entries = tokio::fs::read_dir(&format_dir)
+            .await
             .map_err(|_| format!("Failed to read directory: {}", format_dir.display()))?;
 
         let mut found_formats = Vec::new();
         let mut entry_count = 0;
-        
+
         while let Some(entry) = entries.next_entry().await? {
             entry_count += 1;
             let entry_path = entry.path();
-            
+
             if !entry_path.is_dir() {
                 continue;
             }
-            
-            let dir_name = entry_path.file_name()
+
+            let dir_name = entry_path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("");
-            
+
             // Check if directory follows the expected naming pattern
             if !dir_name.contains('-') {
-                tracing::warn!("Story format directory '{}' does not follow the standard naming pattern 'format-version'", dir_name);
+                tracing::warn!(
+                    "Story format directory '{}' does not follow the standard naming pattern 'format-version'",
+                    dir_name
+                );
             }
-            
+
             let format_file = entry_path.join("format.js");
-            
+
             if !format_file.exists() {
-                tracing::warn!("Story format directory '{}' is missing format.js file", dir_name);
+                tracing::warn!(
+                    "Story format directory '{}' is missing format.js file",
+                    dir_name
+                );
                 continue;
             }
 
             match Self::load(&format_file).await {
                 Ok(story_format_struct) => {
-                    debug!("Successfully loaded story format from: {}", format_file.display());
-                    debug!("Format name: {:?}, version: {}", story_format_struct.name, story_format_struct.version);
-                    
+                    debug!(
+                        "Successfully loaded story format from: {}",
+                        format_file.display()
+                    );
+                    debug!(
+                        "Format name: {:?}, version: {}",
+                        story_format_struct.name, story_format_struct.version
+                    );
+
                     let name_match = match story_format_struct.name {
                         Some(ref name) => {
                             let matches = name.eq_ignore_ascii_case(story_format);
-                            debug!("Name comparison: '{}' vs '{}' = {}", name, story_format, matches);
+                            debug!(
+                                "Name comparison: '{}' vs '{}' = {}",
+                                name, story_format, matches
+                            );
                             matches
                         }
                         None => {
                             debug!("Story format has no name field");
-                            continue
+                            continue;
                         }
                     };
 
                     if name_match && story_format_struct.version == version {
-                        debug!("Found exact match: name='{}', version='{}'", story_format, version);
+                        debug!(
+                            "Found exact match: name='{}', version='{}'",
+                            story_format, version
+                        );
                         return Ok(story_format_struct);
                     } else {
-                        found_formats.push((dir_name.to_string(), story_format_struct.name.clone(), story_format_struct.version.clone()));
+                        found_formats.push((
+                            dir_name.to_string(),
+                            story_format_struct.name.clone(),
+                            story_format_struct.version.clone(),
+                        ));
                     }
                 }
                 Err(e) => {
-                    tracing::warn!("Failed to load story format from {}: {}", format_file.display(), e);
-                    continue
+                    tracing::warn!(
+                        "Failed to load story format from {}: {}",
+                        format_file.display(),
+                        e
+                    );
+                    continue;
                 }
             }
         }
 
-        debug!("Found {} entries in format directory: {}", entry_count, format_dir.display());
-        
+        debug!(
+            "Found {} entries in format directory: {}",
+            entry_count,
+            format_dir.display()
+        );
+
         if !found_formats.is_empty() {
             debug!("Available formats found:");
             for (dir, name, ver) in &found_formats {
-                debug!("  Directory: '{}' -> Name: {:?}, Version: '{}'", dir, name, ver);
+                debug!(
+                    "  Directory: '{}' -> Name: {:?}, Version: '{}'",
+                    dir, name, ver
+                );
             }
         }
 
-        Err(format!("Story format '{}' version '{}' not found. Available formats: {:?}",
-                    story_format, version, found_formats).into())
+        Err(format!(
+            "Story format '{}' version '{}' not found. Available formats: {:?}",
+            story_format, version, found_formats
+        )
+        .into())
     }
 }

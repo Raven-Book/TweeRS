@@ -1,13 +1,12 @@
-use tweers::cli::{build_command, Cli, Commands};
-use tracing::{error, info};
 use clap::Parser;
-use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer};
-use tweers::config::constants;
 use std::fs::OpenOptions;
+use tracing::{error, info};
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use tweers::cli::{Cli, Commands, build_command};
+use tweers::config::constants;
 
 #[tokio::main]
 async fn main() {
-    
     let log_file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -21,9 +20,8 @@ async fn main() {
                 .with_thread_ids(false)
                 .with_level(true)
                 .with_filter(
-                    EnvFilter::try_from_default_env()
-                        .unwrap_or_else(|_| EnvFilter::new("info"))
-                )
+                    EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+                ),
         )
         .with(
             fmt::layer()
@@ -31,7 +29,7 @@ async fn main() {
                 .with_target(false)
                 .with_thread_ids(false)
                 .with_level(true)
-                .with_filter(EnvFilter::new("debug"))
+                .with_filter(EnvFilter::new("debug")),
         )
         .init();
 
@@ -45,7 +43,11 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     constants::init_constants();
     let args = Cli::parse();
     match args.cmd {
-        Commands::Build { watch, dist, sources } => {
+        Commands::Build {
+            watch,
+            dist,
+            sources,
+        } => {
             build_command(sources, dist, watch).await?;
         }
         Commands::Zip {} => {
@@ -54,4 +56,3 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
-

@@ -1,7 +1,7 @@
-use tracing::debug;
+use crate::core::story::{Passage, StoryData};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::core::story::{Passage, StoryData};
+use tracing::debug;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PassageMetadata {
@@ -23,16 +23,16 @@ struct PassageContext<'a> {
 pub struct TweeParser;
 
 impl TweeParser {
-
     /// Parse twee3 file content
     pub fn parse(content: &str) -> ParseResult {
-        
-        debug!("Starting to parse content with {} lines", content.lines().count());
+        debug!(
+            "Starting to parse content with {} lines",
+            content.lines().count()
+        );
         let mut passages = HashMap::new();
         let mut story_data = None;
         let mut story_title: Option<String> = None;
 
-        
         let mut current_passage: Option<PassageHeader> = None;
 
         let mut current_content: Vec<&str> = Vec::new();
@@ -71,7 +71,8 @@ impl TweeParser {
         }
 
         if let Some(ref mut data) = story_data {
-            data.validate().map_err(|e| std::format!("StoryData validation failed: {}", e))?;
+            data.validate()
+                .map_err(|e| std::format!("StoryData validation failed: {}", e))?;
         }
 
         Ok((passages, story_data))
@@ -86,9 +87,13 @@ impl TweeParser {
         context: &mut PassageContext,
     ) -> Result<(), String> {
         use tracing::debug;
-        
+
         let content = content_lines.join("\n").trim().to_string();
-        debug!("Saving passage '{}' with content length: {}", name, content.len());
+        debug!(
+            "Saving passage '{}' with content length: {}",
+            name,
+            content.len()
+        );
 
         if name == "StoryData" {
             debug!("Processing StoryData with content: {:?}", content);
@@ -98,8 +103,14 @@ impl TweeParser {
                         data.name = Some(title.clone());
                     }
                     *context.story_data = Some(data);
-                },
-                Err(e) => return Err(std::format!("Failed to parse StoryData JSON: {}. \nContent: '{}'", e, content)),
+                }
+                Err(e) => {
+                    return Err(std::format!(
+                        "Failed to parse StoryData JSON: {}. \nContent: '{}'",
+                        e,
+                        content
+                    ));
+                }
             }
         } else if name == "StoryTitle" {
             *context.story_title = Some(content);
@@ -118,13 +129,12 @@ impl TweeParser {
     }
 
     fn parse_header(header: &str) -> Result<PassageHeader, String> {
-
         let mut chars = header.chars().peekable();
 
         while let Some(&ch) = chars.peek() {
             if ch.is_whitespace() {
                 chars.next();
-            } else { 
+            } else {
                 break;
             }
         }
@@ -170,7 +180,7 @@ impl TweeParser {
                         tags = Some(tag_content.trim().to_string());
                     }
                     i = end_pos + 1;
-                },
+                }
                 '{' => {
                     let (json_content, end_pos) = Self::parse_brace_block(&remainder_chars, i)?;
                     if let Ok(metadata) = serde_json::from_str::<PassageMetadata>(&json_content) {
@@ -178,7 +188,7 @@ impl TweeParser {
                         size = Some(metadata.size);
                     }
                     i = end_pos + 1;
-                },
+                }
                 _ => {
                     i += 1;
                 }
@@ -254,7 +264,7 @@ impl TweeParser {
                         if brace_count == 0 {
                             return Ok((content, i));
                         }
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -264,6 +274,4 @@ impl TweeParser {
 
         Err("Unclosed '{' brace".to_string())
     }
-
-
 }
