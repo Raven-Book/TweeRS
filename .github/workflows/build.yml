@@ -1,11 +1,11 @@
-name: Build
+name: Build and Release
 on:
-  workflow_dispatch: {}
-  workflow_run:
-    workflows: ["Test"]
-    types:
-      - completed
+  push:
+    paths:
+      - 'VERSION'
     branches: [master]
+  workflow_dispatch: {}
+
 jobs:
   build:
     name: build
@@ -35,6 +35,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -56,13 +63,22 @@ jobs:
           mkdir archive
           if [ -f "LICENSE" ]; then cp LICENSE archive/; fi
           if [ -f "README.md" ]; then cp README.md archive/; fi
+          if [ -d "test/story-format" ]; then cp -r test/story-format archive/; fi
           cd archive
           if [ "${{ matrix.build }}" = "windows" ]; then
             cp "../target/${{ matrix.target }}/release/tweers.exe" ./
-            7z a "${{ matrix.archive-name }}" LICENSE README.md tweers.exe
+            if [ -d "story-format" ]; then
+              7z a "${{ matrix.archive-name }}" LICENSE README.md story-format tweers.exe
+            else
+              7z a "${{ matrix.archive-name }}" LICENSE README.md tweers.exe
+            fi
           else
             cp "../target/${{ matrix.target }}/release/tweers" ./
-            tar -czf "${{ matrix.archive-name }}" LICENSE README.md tweers
+            if [ -d "story-format" ]; then
+              tar -czf "${{ matrix.archive-name }}" LICENSE README.md story-format tweers
+            else
+              tar -czf "${{ matrix.archive-name }}" LICENSE README.md tweers
+            fi
           fi
 
       - name: Upload archive
@@ -70,3 +86,38 @@ jobs:
         with:
           name: ${{ matrix.archive-name }}
           path: archive/${{ matrix.archive-name }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.event.head_commit.modified, 'VERSION')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          files: |
+            ./artifacts/tweers-linux.tar.gz/tweers-linux.tar.gz
+            ./artifacts/tweers-macos.tar.gz/tweers-macos.tar.gz
+            ./artifacts/tweers-windows.7z/tweers-windows.7z
+          draft: false
+          prerelease: false
