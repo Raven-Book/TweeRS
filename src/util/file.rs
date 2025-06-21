@@ -1,13 +1,12 @@
 use crate::config::constants;
 use crate::core::story::{Passage, StoryData, StoryFormat};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::sync::Arc;
 use tokio::fs as async_fs;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tracing::{debug, info, warn};
-use tracing_subscriber::filter::FilterExt;
+use tracing::{debug, info};
 
 /// Check if the file is a Twee file
 pub fn is_twee(path: &PathBuf) -> bool {
@@ -33,14 +32,13 @@ pub async fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>, std::io::E
         let path = path.clone();
         let files_clone = Arc::clone(&files);
         set.spawn(async move {
-            let mut files = Vec::new();
             let metadata = async_fs::metadata(&path).await?;
             if metadata.is_dir() {
                 debug!("Processing directory: {:?}", path);
                 process_path(path, files_clone).await?
             } else if is_twee(&path) {
                 debug!("Found twee file: {:?}", path);
-                files.push(path);
+                files_clone.lock().await.push(path);
             }
             Ok::<_, std::io::Error>(())
         });
@@ -125,13 +123,14 @@ mod tests {
             .init();
 
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let story_path = project_root.join("test");
+        let mut paths = Vec::new();
+        paths.push(project_root.join("test/story/Part 1"));
+        paths.push(project_root.join("test/story/Part 2"));
+        paths.push(project_root.join("test/story/A.twee"));
 
         debug!("Project root directory: {:?}", project_root);
-        debug!("Story directory path: {:?}", story_path);
+        debug!("Story directory path: {:?}", paths);
 
-        let mut paths = Vec::new();
-        paths.push(story_path);
         match collect_files(&paths).await {
             Ok(paths) => {
                 debug!("Count of found files: {:?}", paths.len());
