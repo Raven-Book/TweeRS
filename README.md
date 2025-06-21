@@ -15,15 +15,15 @@
 **语法：**
 
 ```bash
-tweers build <source_dir> -o <output_dir>
+tweers build <source_dir> -o <output_dir> -t
 ```
 
 **参数：**
 
 - `<source_dir>`：输入文件路径
 - `-o <output_dir>`：输出文件路径
-- `-w` 监听目录，当文件发生变化时，自动重新构建。
-
+- `-w` 监听文件变化
+- `-t` 测试模式
 
 ## Features
 - [ ] 增加正则匹配模块与JS注入模板

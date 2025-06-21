@@ -18,6 +18,7 @@ impl HtmlOutputHandler {
     pub async fn generate_html(
         passages: &IndexMap<String, Passage>,
         story_data: &Option<StoryData>,
+        context: &crate::cli::BuildContext,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let data = story_data.as_ref().ok_or("StoryData is required")?;
 
@@ -57,7 +58,8 @@ impl HtmlOutputHandler {
             start_passage,
             zoom,
         };
-        let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, data)?;
+        let story_data_xml =
+            Self::get_twine2_data_chunk(passages, &story_info, data, context.is_debug)?;
 
         let html = story_format
             .source
@@ -112,7 +114,8 @@ impl HtmlOutputHandler {
                         start_passage,
                         zoom,
                     };
-                    let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, data)?;
+                    let story_data_xml =
+                        Self::get_twine2_data_chunk(passages, &story_info, data, context.is_debug)?;
 
                     let html = story_format
                         .source
@@ -135,7 +138,7 @@ impl HtmlOutputHandler {
             }
         }
 
-        Self::generate_html(passages, story_data).await
+        Self::generate_html(passages, story_data, context).await
     }
 
     /// Generate HTML using cached story format (avoid repeated format file lookups)
@@ -178,7 +181,8 @@ impl HtmlOutputHandler {
                 start_passage,
                 zoom,
             };
-            let story_data_xml = Self::get_twine2_data_chunk(passages, &story_info, story_data)?;
+            let story_data_xml =
+                Self::get_twine2_data_chunk(passages, &story_info, story_data, context.is_debug)?;
 
             let html = story_format
                 .source
@@ -196,6 +200,7 @@ impl HtmlOutputHandler {
         passages: &IndexMap<String, Passage>,
         story_info: &StoryInfo,
         story_data: &StoryData,
+        is_debug: bool,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let mut data = Vec::new();
         let mut start_id = String::new();
@@ -326,7 +331,7 @@ impl HtmlOutputHandler {
             }
         }
 
-        let options = "";
+        let options = if is_debug { "debug" } else { "" };
 
         let story_data_xml = std::format!(
             "<tw-storydata name={:?} startnode={:?} creator={:?} creator-version={:?} ifid={:?} zoom={:?} format={:?} format-version={:?} options={:?} hidden>{}</tw-storydata>",

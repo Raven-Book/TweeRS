@@ -24,6 +24,9 @@ pub enum Commands {
         /// Output path
         #[clap(short, long, default_value = "index.html")]
         dist: PathBuf,
+        /// Debug mode
+        #[clap(short = 't', long)]
+        is_debug: bool,
     },
 
     Zip {},
@@ -53,21 +56,24 @@ pub struct BuildContext {
     pub format_version: String,
     /// Cache parsed file contents with modification times
     pub file_cache: IndexMap<PathBuf, FileInfo>,
+    /// Debug mode flag
+    pub is_debug: bool,
 }
 
 impl Default for BuildContext {
     fn default() -> Self {
-        Self::new()
+        Self::new(false)
     }
 }
 
 impl BuildContext {
-    pub fn new() -> Self {
+    pub fn new(is_debug: bool) -> Self {
         Self {
             story_format: None,
             format_name: String::new(),
             format_version: String::new(),
             file_cache: IndexMap::new(),
+            is_debug,
         }
     }
 
@@ -127,13 +133,14 @@ pub async fn build_command(
     sources: Vec<PathBuf>,
     dist: PathBuf,
     watch: bool,
+    is_debug: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting build command");
     debug!("Sources: {:?}", sources);
     debug!("Output: {:?}", dist);
     debug!("Watch mode: {}", watch);
 
-    let mut context = BuildContext::new();
+    let mut context = BuildContext::new(is_debug);
 
     build_once(&sources, &dist, &mut context, false).await?;
 
