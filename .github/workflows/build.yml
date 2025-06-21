@@ -13,52 +13,44 @@ on:
 
 jobs:
   build:
-    name: build
-    runs-on: ${{ matrix.os }}
+    name: Build - ${{ matrix.platform.os-name }}
     strategy:
       matrix:
-        build: [linux, macos, windows]
-        include:
-          - build: linux
-            os: ubuntu-latest
-            rust: stable
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-latest
             target: x86_64-unknown-linux-musl
             archive-name: tweers-linux.tar.gz
-          - build: linux-arm64
-            os: ubuntu-latest
-            rust: stable
+
+          - os-name: Linux-aarch64
+            runs-on: ubuntu-latest
             target: aarch64-unknown-linux-musl
             archive-name: tweers-linux-arm64.tar.gz
-          - build: macos
-            os: macos-latest
-            rust: stable
+
+          - os-name: macOS-x86_64
+            runs-on: macos-latest
             target: x86_64-apple-darwin
             archive-name: tweers-macos.tar.gz
-          - build: windows
-            os: windows-latest
-            rust: stable
+
+          - os-name: Windows-x86_64
+            runs-on: windows-latest
             target: x86_64-pc-windows-msvc
             archive-name: tweers-windows.7z
+
       fail-fast: false
 
+    runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ matrix.rust }}
-          targets: ${{ matrix.target }}
-
       - name: Build binary
-        run: cargo build --verbose --release --target ${{ matrix.target }}
-        env:
-          RUST_BACKTRACE: 1
-
-      - name: Strip binary (linux and macos)
-        if: matrix.build == 'linux' || matrix.build == 'macos'
-        run: strip "target/${{ matrix.target }}/release/tweers"
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true
 
       - name: Build archive
         shell: bash
@@ -68,27 +60,27 @@ jobs:
           if [ -f "README.md" ]; then cp README.md archive/; fi
           if [ -d "test/story-format" ]; then cp -r test/story-format archive/; fi
           cd archive
-          if [ "${{ matrix.build }}" = "windows" ]; then
-            cp "../target/${{ matrix.target }}/release/tweers.exe" ./
+          if [ "${{ matrix.platform.target }}" = "x86_64-pc-windows-msvc" ]; then
+            cp "../target/${{ matrix.platform.target }}/release/tweers.exe" ./
             if [ -d "story-format" ]; then
-              7z a "${{ matrix.archive-name }}" LICENSE README.md story-format tweers.exe
+              7z a "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers.exe
             else
-              7z a "${{ matrix.archive-name }}" LICENSE README.md tweers.exe
+              7z a "${{ matrix.platform.archive-name }}" LICENSE README.md tweers.exe
             fi
           else
-            cp "../target/${{ matrix.target }}/release/tweers" ./
+            cp "../target/${{ matrix.platform.target }}/release/tweers" ./
             if [ -d "story-format" ]; then
-              tar -czf "${{ matrix.archive-name }}" LICENSE README.md story-format tweers
+              tar -czf "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers
             else
-              tar -czf "${{ matrix.archive-name }}" LICENSE README.md tweers
+              tar -czf "${{ matrix.platform.archive-name }}" LICENSE README.md tweers
             fi
           fi
 
       - name: Upload archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.archive-name }}
-          path: archive/${{ matrix.archive-name }}
+          name: ${{ matrix.platform.archive-name }}
+          path: archive/${{ matrix.platform.archive-name }}
 
   release:
     name: Create Release
@@ -115,6 +107,7 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
             ./artifacts/tweers-linux.tar.gz/tweers-linux.tar.gz
+            ./artifacts/tweers-linux-arm64.tar.gz/tweers-linux-arm64.tar.gz
             ./artifacts/tweers-macos.tar.gz/tweers-macos.tar.gz
             ./artifacts/tweers-windows.7z/tweers-windows.7z
           draft: false
