@@ -3,7 +3,13 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '当前版本号'
+        required: true
+        type: string
+        default: 'v1.0.0'
 
 jobs:
   build:
@@ -83,7 +89,7 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     
@@ -101,6 +107,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
             ./artifacts/tweers-linux.tar.gz/tweers-linux.tar.gz
             ./artifacts/tweers-macos.tar.gz/tweers-macos.tar.gz
