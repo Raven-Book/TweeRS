@@ -1,6 +1,11 @@
-name: build
+name: Build
 on:
   workflow_dispatch: {}
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+    branches: [master]
 jobs:
   build:
     name: build

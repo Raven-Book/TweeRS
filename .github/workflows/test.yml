@@ -1,7 +1,17 @@
-on: [push, pull_request]
-
-name: Continuous integration
-
+name: Test
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/test.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/test.yml'
 jobs:
   check:
     name: Check
