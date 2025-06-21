@@ -10,33 +10,31 @@ jobs:
         build: [linux, macos, windows]
         include:
           - build: linux
-            os: ubuntu-18.04
-            rust: nightly
+            os: ubuntu-latest
+            rust: stable
             target: x86_64-unknown-linux-musl
-            archive-name: sgf-render-linux.tar.gz
+            archive-name: tweers-linux.tar.gz
           - build: macos
             os: macos-latest
-            rust: nightly
+            rust: stable
             target: x86_64-apple-darwin
-            archive-name: sgf-render-macos.tar.gz
+            archive-name: tweers-macos.tar.gz
           - build: windows
-            os: windows-2019
-            rust: nightly-x86_64-msvc
+            os: windows-latest
+            rust: stable
             target: x86_64-pc-windows-msvc
-            archive-name: sgf-render-windows.7z
+            archive-name: tweers-windows.7z
       fail-fast: false
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: ${{ matrix.target }}
+          targets: ${{ matrix.target }}
 
       - name: Build binary
         run: cargo build --verbose --release --target ${{ matrix.target }}
@@ -45,23 +43,25 @@ jobs:
 
       - name: Strip binary (linux and macos)
         if: matrix.build == 'linux' || matrix.build == 'macos'
-        run: strip "target/${{ matrix.target }}/release/sgf-render"
+        run: strip "target/${{ matrix.target }}/release/tweers"
 
       - name: Build archive
         shell: bash
         run: |
           mkdir archive
-          cp LICENSE README.md archive/
+          if [ -f "LICENSE" ]; then cp LICENSE archive/; fi
+          if [ -f "README.md" ]; then cp README.md archive/; fi
           cd archive
           if [ "${{ matrix.build }}" = "windows" ]; then
-            cp "../target/${{ matrix.target }}/release/sgf-render.exe" ./
-            7z a "${{ matrix.archive-name }}" LICENSE README.md sgf-render.exe
+            cp "../target/${{ matrix.target }}/release/tweers.exe" ./
+            7z a "${{ matrix.archive-name }}" LICENSE README.md tweers.exe
           else
-            cp "../target/${{ matrix.target }}/release/sgf-render" ./
-            tar -czf "${{ matrix.archive-name }}" LICENSE README.md sgf-render
+            cp "../target/${{ matrix.target }}/release/tweers" ./
+            tar -czf "${{ matrix.archive-name }}" LICENSE README.md tweers
           fi
+
       - name: Upload archive
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.archive-name }}
           path: archive/${{ matrix.archive-name }}
