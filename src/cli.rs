@@ -186,14 +186,10 @@ async fn build_once(
 
             let (passages, file_story_data) = if let Some(extension) = file_path.extension() {
                 let ext_str = extension.to_string_lossy().to_lowercase();
-                debug!("Processing file with extension: {}", ext_str);
                 match ext_str.as_str() {
                     "js" => {
-                        let passage_name = file_path
-                            .file_stem()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or("script")
-                            .to_string();
+                        let passage_name = file_path.to_string_lossy().to_string();
+
                         debug!("Creating JS passage with name: {}", passage_name);
                         let mut passages = IndexMap::new();
                         let passage = Passage {
@@ -212,11 +208,8 @@ async fn build_once(
                         (passages, None)
                     }
                     "css" => {
-                        let passage_name = file_path
-                            .file_stem()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or("stylesheet")
-                            .to_string();
+                        let passage_name = file_path.to_string_lossy().to_string();
+
                         debug!("Creating CSS passage with name: {}", passage_name);
                         let mut passages = IndexMap::new();
                         let passage = Passage {
@@ -263,6 +256,12 @@ async fn build_once(
                     "Adding passage to all_passages in order: {} from file {:?} with tags: {:?}",
                     name, file_path, passage.tags
                 );
+                if all_passages.contains_key(name) {
+                    warn!(
+                        "Duplicate passage name '{}' found in file {:?}. Overwriting existing passage.",
+                        name, file_path
+                    );
+                }
                 all_passages.insert(name.clone(), passage.clone());
             }
 

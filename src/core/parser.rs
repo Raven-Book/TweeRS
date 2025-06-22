@@ -150,13 +150,15 @@ impl TweeParser {
             } else if ch == '\\' {
                 chars.next();
                 escaped = true;
-            } else if ch == '[' || ch == '{' || ch == ' ' {
+            } else if ch == '[' || ch == '{' {
                 break;
             } else {
                 chars.next();
                 name.push(ch);
             }
         }
+
+        let name = name.trim().to_string();
 
         if name.is_empty() {
             return Err("Empty passage name".to_string());

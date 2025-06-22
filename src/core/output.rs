@@ -338,7 +338,7 @@ impl HtmlOutputHandler {
             story_info.name,
             start_id,
             "TweeRS",
-            "0.1.0",
+            env!("CARGO_PKG_VERSION"),
             story_info.ifid,
             story_info.zoom.to_string(),
             story_info.format,
