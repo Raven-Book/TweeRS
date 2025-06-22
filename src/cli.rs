@@ -102,7 +102,6 @@ impl BuildContext {
                         .values()
                         .any(|p| p.tags.as_ref().is_some_and(|tags| tags == media_type));
 
-
                     if !has_media_passage {
                         debug!(
                             "Media file {:?} not previously processed as media, forcing reprocess",
