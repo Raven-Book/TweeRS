@@ -1,7 +1,7 @@
 # TweeRS
 > 本项目目前处于实验阶段，功能尚未稳定，不建议使用
 
-当前版本: `0.1.3`
+当前版本: `0.1.5`
 
 ## 项目简介
 
@@ -15,13 +15,14 @@
 **语法：**
 
 ```bash
-tweers build <source_dir> -o <output_dir> -t
+tweers build <source_dir> -o <output_dir> -t -b -w
 ```
 
 **参数：**
 
 - `<source_dir>`：输入文件路径
 - `-o <output_dir>`：输出文件路径
+- `-b` 将资源文件转为base64打包在片段中
 - `-w` 监听文件变化
 - `-t` 测试模式
 

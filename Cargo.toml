@@ -1,6 +1,6 @@
 [package]
 name = "tweers"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 
 [dependencies]
@@ -13,4 +13,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 regex = "1.0"
 notify = "8.0.0"
 indexmap = { version = "2.9.0", features = ["serde"] }
-log = "0.4.27"
+base64 = "0.22"

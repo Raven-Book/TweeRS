@@ -1,8 +1,11 @@
-use crate::config::constants;
 use crate::core::output::HtmlOutputHandler;
 use crate::core::parser::TweeParser;
 use crate::core::story::{Passage, StoryData, StoryFormat};
-use crate::util::file::collect_files;
+use crate::util::file::{
+    collect_files_with_base64, get_media_passage_type, get_mime_type_prefix,
+    is_support_file_with_base64,
+};
+use base64::{Engine as _, engine::general_purpose};
 use clap::{Parser, Subcommand};
 use indexmap::IndexMap;
 use notify::{EventKind, RecursiveMode};
@@ -27,6 +30,9 @@ pub enum Commands {
         /// Debug mode
         #[clap(short = 't', long)]
         is_debug: bool,
+        /// Convert images to Base64 fragments
+        #[clap(short, long)]
+        base64: bool,
     },
 
     Zip {},
@@ -58,22 +64,25 @@ pub struct BuildContext {
     pub file_cache: IndexMap<PathBuf, FileInfo>,
     /// Debug mode flag
     pub is_debug: bool,
+    /// Base64 encoding flag for media files
+    pub base64: bool,
 }
 
 impl Default for BuildContext {
     fn default() -> Self {
-        Self::new(false)
+        Self::new(false, false)
     }
 }
 
 impl BuildContext {
-    pub fn new(is_debug: bool) -> Self {
+    pub fn new(is_debug: bool, base64: bool) -> Self {
         Self {
             story_format: None,
             format_name: String::new(),
             format_version: String::new(),
             file_cache: IndexMap::new(),
             is_debug,
+            base64,
         }
     }
 
@@ -83,6 +92,27 @@ impl BuildContext {
         let modified = metadata.modified()?;
 
         if let Some(cached) = self.file_cache.get(path) {
+            // If base64 is enabled and this is a media file, check if it was previously
+            // processed as a media file (has media-related tags)
+            if self.base64 {
+                if let Some(media_type) = get_media_passage_type(path) {
+                    // Check if any cached passage for this file has the expected media tag
+                    let has_media_passage = cached
+                        .passages
+                        .values()
+                        .any(|p| p.tags.as_ref().is_some_and(|tags| tags == media_type));
+
+
+                    if !has_media_passage {
+                        debug!(
+                            "Media file {:?} not previously processed as media, forcing reprocess",
+                            path
+                        );
+                        return Ok(true);
+                    }
+                }
+            }
+
             Ok(cached.modified != modified)
         } else {
             Ok(true)
@@ -134,13 +164,15 @@ pub async fn build_command(
     dist: PathBuf,
     watch: bool,
     is_debug: bool,
+    base64: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting build command");
     debug!("Sources: {:?}", sources);
     debug!("Output: {:?}", dist);
     debug!("Watch mode: {}", watch);
+    debug!("Base64 mode: {}", base64);
 
-    let mut context = BuildContext::new(is_debug);
+    let mut context = BuildContext::new(is_debug, base64);
 
     build_once(&sources, &dist, &mut context, false).await?;
 
@@ -160,9 +192,19 @@ async fn build_once(
     is_rebuild: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting build process...");
+    debug!("Base64 mode enabled: {}", context.base64);
 
-    let files = collect_files(sources).await?;
+    let files = collect_files_with_base64(sources, context.base64).await?;
     debug!("Found {} support files", files.len());
+
+    // Add debug info about found files
+    if context.base64 {
+        for file in &files {
+            if let Some(media_type) = get_media_passage_type(file) {
+                debug!("Found media file: {:?} (type: {})", file, media_type);
+            }
+        }
+    }
 
     if files.is_empty() {
         return Err("No support files found in the specified sources".into());
@@ -174,6 +216,7 @@ async fn build_once(
 
     // First pass: process modified files and update cache
     for file_path in &files {
+        debug!("Checking if file is modified: {:?}", file_path);
         if context.is_file_modified(file_path)? {
             if is_rebuild {
                 debug!("Parsing modified file: {:?}", file_path);
@@ -182,12 +225,12 @@ async fn build_once(
             }
             modified_files.push(file_path.clone());
 
-            let content = tokio::fs::read_to_string(file_path).await?;
-
             let (passages, file_story_data) = if let Some(extension) = file_path.extension() {
                 let ext_str = extension.to_string_lossy().to_lowercase();
+                debug!("File extension: {}", ext_str);
                 match ext_str.as_str() {
                     "js" => {
+                        let content = tokio::fs::read_to_string(file_path).await?;
                         let passage_name = file_path.to_string_lossy().to_string();
 
                         debug!("Creating JS passage with name: {}", passage_name);
@@ -208,6 +251,7 @@ async fn build_once(
                         (passages, None)
                     }
                     "css" => {
+                        let content = tokio::fs::read_to_string(file_path).await?;
                         let passage_name = file_path.to_string_lossy().to_string();
 
                         debug!("Creating CSS passage with name: {}", passage_name);
@@ -228,13 +272,62 @@ async fn build_once(
                         (passages, None)
                     }
                     _ => {
-                        debug!("Parsing as Twee file");
-                        TweeParser::parse(&content).map_err(|e| {
-                            format!("Failed to parse {}: {}", file_path.display(), e)
-                        })?
+                        // Check if it's a media file and base64 is enabled
+                        debug!(
+                            "Checking if file is media file, base64 enabled: {}",
+                            context.base64
+                        );
+                        if context.base64 {
+                            if let Some(media_type) = get_media_passage_type(file_path) {
+                                debug!("Processing media file: {:?} as {}", file_path, media_type);
+
+                                let binary_content = tokio::fs::read(file_path).await?;
+                                let base64_content =
+                                    general_purpose::STANDARD.encode(&binary_content);
+                                let mime_prefix = get_mime_type_prefix(file_path);
+                                let full_content = format!("{}{}", mime_prefix, base64_content);
+                                let passage_name = file_path.to_string_lossy().to_string();
+
+                                debug!(
+                                    "Creating media passage with name: {} (type: {})",
+                                    passage_name, media_type
+                                );
+                                debug!("MIME prefix: {}", mime_prefix);
+                                let mut passages = IndexMap::new();
+                                debug!(
+                                    "Created media passage: {} with {} characters of data URL content",
+                                    passage_name,
+                                    full_content.len()
+                                );
+                                let passage = Passage {
+                                    name: passage_name.clone(),
+                                    tags: Some(media_type.to_string()),
+                                    position: None,
+                                    size: None,
+                                    content: full_content,
+                                };
+                                passages.insert(passage_name.clone(), passage);
+                                (passages, None)
+                            } else {
+                                debug!("File is not a media file, parsing as Twee file");
+                                let content = tokio::fs::read_to_string(file_path).await?;
+                                debug!("Parsing as Twee file");
+                                TweeParser::parse(&content).map_err(|e| {
+                                    format!("Failed to parse {}: {}", file_path.display(), e)
+                                })?
+                            }
+                        } else {
+                            debug!("Base64 not enabled, parsing as Twee file");
+                            let content = tokio::fs::read_to_string(file_path).await?;
+                            debug!("Parsing as Twee file");
+                            TweeParser::parse(&content).map_err(|e| {
+                                format!("Failed to parse {}: {}", file_path.display(), e)
+                            })?
+                        }
                     }
                 }
             } else {
+                let content = tokio::fs::read_to_string(file_path).await?;
                 debug!("No extension, parsing as Twee file");
                 TweeParser::parse(&content)
                     .map_err(|e| format!("Failed to parse {}: {}", file_path.display(), e))?
@@ -245,6 +338,8 @@ async fn build_once(
             if story_data.is_none() && file_story_data.is_some() {
                 story_data = file_story_data;
             }
+        } else {
+            debug!("File not modified, skipping: {:?}", file_path);
         }
     }
 
@@ -303,10 +398,35 @@ async fn build_once(
                 .is_some_and(|tags| tags.contains("stylesheet"))
         })
         .count();
+    let media_count = all_passages
+        .values()
+        .filter(|p| {
+            p.tags.as_ref().is_some_and(|tags| {
+                tags.starts_with("Twine.image")
+                    || tags.starts_with("Twine.audio")
+                    || tags.starts_with("Twine.video")
+                    || tags.starts_with("Twine.vtt")
+            })
+        })
+        .count();
     debug!(
-        "Script passages: {}, Stylesheet passages: {}",
-        script_count, stylesheet_count
+        "Script passages: {}, Stylesheet passages: {}, Media passages: {}",
+        script_count, stylesheet_count, media_count
     );
+
+    if context.base64 && media_count > 0 {
+        info!(
+            "Successfully processed {} media files with base64 encoding",
+            media_count
+        );
+        for passage in all_passages.values() {
+            if let Some(ref tags) = passage.tags {
+                if tags.starts_with("Twine.") {
+                    info!("Media passage: {} ({})", passage.name, tags);
+                }
+            }
+        }
+    }
 
     let html = if modified_files.is_empty() {
         debug!("Using incremental update (no files modified)");
@@ -398,16 +518,10 @@ async fn watch_and_rebuild(
         match rx.recv_timeout(Duration::from_millis(100)) {
             Ok(Ok(event)) => match event.kind {
                 EventKind::Create(_) | EventKind::Modify(_) => {
-                    let has_relevant_changes = event.paths.iter().any(|path| {
-                        if let Some(ext) = path.extension().and_then(|ext| ext.to_str()) {
-                            let ext_lower = ext.to_lowercase();
-                            constants::TWEE_EXTENSIONS.contains(&ext_lower.as_str())
-                                || ext_lower == "js"
-                                || ext_lower == "css"
-                        } else {
-                            false
-                        }
-                    });
+                    let has_relevant_changes = event
+                        .paths
+                        .iter()
+                        .any(|path| is_support_file_with_base64(path, context.base64));
 
                     if has_relevant_changes {
                         info!("Detected changes in source files: {:?}", event.paths);

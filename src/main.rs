@@ -48,8 +48,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             dist,
             sources,
             is_debug,
+            base64,
         } => {
-            build_command(sources, dist, watch, is_debug).await?;
+            build_command(sources, dist, watch, is_debug, base64).await?;
         }
         Commands::Zip {} => {
             info!("Zip command not implemented yet");
