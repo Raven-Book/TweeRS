@@ -20,22 +20,22 @@ jobs:
           - os-name: Linux-x86_64
             runs-on: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            archive-name: tweers-linux.tar.gz
+            archive-name: tweers-linux-x86_64.tar.gz
 
           - os-name: Linux-aarch64
             runs-on: ubuntu-latest
             target: aarch64-unknown-linux-musl
-            archive-name: tweers-linux-arm64.tar.gz
+            archive-name: tweers-linux-aarch64.tar.gz
 
           - os-name: macOS-x86_64
             runs-on: macos-latest
             target: x86_64-apple-darwin
-            archive-name: tweers-macos.tar.gz
+            archive-name: tweers-macos-x86_64.tar.gz
 
           - os-name: Windows-x86_64
             runs-on: windows-latest
             target: x86_64-pc-windows-msvc
-            archive-name: tweers-windows.7z
+            archive-name: tweers-windows-x86_64.7z
 
       fail-fast: false
 
@@ -106,9 +106,9 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
-            ./artifacts/tweers-linux.tar.gz/tweers-linux.tar.gz
-            ./artifacts/tweers-linux-arm64.tar.gz/tweers-linux-arm64.tar.gz
-            ./artifacts/tweers-macos.tar.gz/tweers-macos.tar.gz
-            ./artifacts/tweers-windows.7z/tweers-windows.7z
+            ./artifacts/tweers-linux-x86_64.tar.gz/tweers-linux-x86_64.tar.gz
+            ./artifacts/tweers-linux-aarch64.tar.gz/tweers-linux-aarch64.tar.gz
+            ./artifacts/tweers-macos-x86_64.tar.gz/tweers-macos-x86_64.tar.gz
+            ./artifacts/tweers-windows-x86_64.7z/tweers-windows-x86_64.7z
           draft: false
           prerelease: false
