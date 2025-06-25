@@ -161,10 +161,7 @@ impl Pipeline {
             node.validate_input(&data)
                 .map_err(PipelineError::NodeError)?;
 
-            data = node
-                .process(data)
-                .await
-                .map_err(PipelineError::NodeError)?;
+            data = node.process(data).await.map_err(PipelineError::NodeError)?;
 
             node.validate_output(&data)
                 .map_err(PipelineError::NodeError)?;
