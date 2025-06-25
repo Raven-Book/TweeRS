@@ -1,6 +1,6 @@
 [package]
 name = "tweers"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2024"
 
 [dependencies]
@@ -14,3 +14,5 @@ regex = "1.0"
 notify = "8.0.0"
 indexmap = { version = "2.9.0", features = ["serde"] }
 base64 = "0.22"
+async-trait="0.1.88"
+thiserror = "2.0.12"

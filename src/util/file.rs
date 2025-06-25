@@ -132,16 +132,24 @@ pub fn get_mime_type_prefix(path: &Path) -> String {
 }
 
 /// Recursively collect all files from given paths
-pub async fn collect_files(paths: &[PathBuf]) -> Result<Vec<PathBuf>, std::io::Error> {
-    collect_files_with_base64(paths, false).await
+pub async fn collect_files(
+    paths: &[PathBuf],
+    is_rebuild: bool,
+) -> Result<Vec<PathBuf>, std::io::Error> {
+    collect_files_with_base64(paths, false, is_rebuild).await
 }
 
 /// Recursively collect all files from given paths with base64 support
 pub async fn collect_files_with_base64(
     paths: &[PathBuf],
     base64_enabled: bool,
+    is_rebuild: bool,
 ) -> Result<Vec<PathBuf>, std::io::Error> {
-    info!("Starting file collection, path count: {}", paths.len());
+    if !is_rebuild {
+        info!("Starting file collection, path count: {}", paths.len());
+    } else {
+        debug!("Starting file collection, path count: {}", paths.len());
+    }
     for path in paths {
         debug!("Processing path: {:?}", path);
     }
@@ -169,10 +177,12 @@ pub async fn collect_files_with_base64(
 
     files.lock().await.sort();
     let result = Arc::try_unwrap(files).unwrap().into_inner();
-    tracing::info!(
-        "File collection completed, found {} support files",
-        result.len()
-    );
+    if !is_rebuild {
+        tracing::info!(
+            "File collection completed, found {} support files",
+            result.len()
+        );
+    }
     Ok(result)
 }
 
@@ -257,7 +267,7 @@ mod tests {
         debug!("Project root directory: {:?}", project_root);
         debug!("Story directory path: {:?}", paths);
 
-        match collect_files(&paths).await {
+        match collect_files(&paths, false).await {
             Ok(paths) => {
                 debug!("Count of found files: {:?}", paths.len());
                 debug!("Found files: {:?}", paths);

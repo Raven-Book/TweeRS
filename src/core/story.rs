@@ -57,7 +57,7 @@ pub enum Color {
 }*/
 
 /// StoryFormat
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoryFormat {
     /// The name of the story format
     pub name: Option<String>,
