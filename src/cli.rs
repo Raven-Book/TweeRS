@@ -25,8 +25,8 @@ pub enum Commands {
         #[clap(short, long)]
         watch: bool,
         /// Output path
-        #[clap(short, long, default_value = "index.html")]
-        dist: PathBuf,
+        #[clap(short = 'o', long, default_value = "index.html")]
+        output_path: PathBuf,
         /// Debug mode
         #[clap(short = 't', long)]
         is_debug: bool,
