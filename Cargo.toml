@@ -1,6 +1,6 @@
 [package]
 name = "tweers"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2024"
 
 [dependencies]
@@ -16,3 +16,7 @@ indexmap = { version = "2.9.0", features = ["serde"] }
 base64 = "0.22"
 async-trait="0.1.88"
 thiserror = "2.0.12"
+# Rust V8
+v8 = "137.2.0"
+# Toml 依赖
+toml = "0.9.1"

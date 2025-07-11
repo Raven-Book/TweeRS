@@ -202,7 +202,7 @@ impl FileParserNode {
                             let binary_content = tokio::fs::read(file_path).await?;
                             let base64_content = general_purpose::STANDARD.encode(&binary_content);
                             let mime_prefix = get_mime_type_prefix(file_path);
-                            let full_content = format!("{}{}", mime_prefix, base64_content);
+                            let full_content = format!("{mime_prefix}{base64_content}");
                             let passage_name = file_path.to_string_lossy().to_string();
 
                             let mut passages = IndexMap::new();
@@ -301,7 +301,7 @@ impl PipeNode for DataAggregatorNode {
 
             // Validate StoryData
             data.validate()
-                .map_err(|e| format!("StoryData validation failed: {}", e))?;
+                .map_err(|e| format!("StoryData validation failed: {e}"))?;
         }
 
         if all_passages.is_empty() {
@@ -334,7 +334,7 @@ impl PipeNode for HtmlGeneratorNode {
     }
 
     fn output(&self) -> Vec<String> {
-        vec!["html_content".to_string()]
+        vec!["html_content".to_string(), "context".to_string()]
     }
 
     async fn process(
@@ -351,6 +351,13 @@ impl PipeNode for HtmlGeneratorNode {
             .get::<Option<StoryData>>("story_data")
             .ok_or("Missing story_data input")?;
 
+        debug!("HtmlGenerator received {} passages", all_passages.len());
+        if all_passages.contains_key("StoryTitle") {
+            debug!("StoryTitle passage exists in HtmlGenerator input");
+        } else {
+            debug!("StoryTitle passage is MISSING in HtmlGenerator input!");
+        }
+
         let mut context = data
             .get::<BuildContext>("context")
             .ok_or("Missing context input")?
@@ -360,13 +367,14 @@ impl PipeNode for HtmlGeneratorNode {
 
         let html = HtmlOutputHandler::update_html(all_passages, story_data, &mut context)
             .await
-            .map_err(|e| format!("HTML generation failed: {}", e))?;
+            .map_err(|e| format!("HTML generation failed: {e}"))?;
 
         if !is_rebuild {
             info!("HTML generation completed successfully");
         }
 
         data.insert("html_content", html);
+        data.insert("context", context);
         Ok(data)
     }
 }

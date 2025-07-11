@@ -274,7 +274,7 @@ impl HtmlOutputHandler {
         if let Some(tag_colors) = &story_data.tag_colors {
             for (tag, color) in tag_colors {
                 data.extend_from_slice(
-                    format!("<tw-tag name={:?} color={:?}></tw-tag>", tag, color).as_bytes(),
+                    format!("<tw-tag name={tag:?} color={color:?}></tw-tag>").as_bytes(),
                 );
             }
         }
@@ -344,7 +344,7 @@ impl HtmlOutputHandler {
             story_info.format,
             story_info.format_version,
             options,
-            String::from_utf8(data).map_err(|e| std::format!("UTF-8 conversion error: {}", e))?
+            String::from_utf8(data).map_err(|e| std::format!("UTF-8 conversion error: {e}"))?
         );
 
         Ok(story_data_xml)

@@ -73,6 +73,7 @@ impl Default for PipeMap {
 
 pub mod core;
 pub mod error;
+
 pub mod nodes;
 
 pub use core::{PipeNode, Pipeline};

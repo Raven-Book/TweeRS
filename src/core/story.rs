@@ -11,7 +11,6 @@ use crate::config::constants;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoryData {
     /// Maps to <tw-storydata name>. From StoryTitle Passage
-    #[serde(skip)]
     pub name: Option<String>,
     /// Maps to <tw-storydata ifid>
     pub ifid: String,
@@ -30,7 +29,7 @@ pub struct StoryData {
 }
 
 /// Passage
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Passage {
     /// The name of the passage
     pub name: String,
@@ -167,7 +166,7 @@ impl StoryFormat {
                 .ok_or("Failed to extract story format json from regex match".to_string())?;
             let json_str = json.as_str();
             let story_format = serde_json::from_str(json_str)
-                .map_err(|e| format!("Failed to parse story format JSON: {}", e))?;
+                .map_err(|e| format!("Failed to parse story format JSON: {e}"))?;
             Ok(story_format)
         } else {
             Err("Could not find window.storyFormat(...) in format file".into())
@@ -331,8 +330,7 @@ impl StoryFormat {
         }
 
         Err(format!(
-            "Story format '{}' version '{}' not found. Available formats: {:?}",
-            story_format, version, found_formats
+            "Story format '{story_format}' version '{version}' not found. Available formats: {found_formats:?}"
         )
         .into())
     }

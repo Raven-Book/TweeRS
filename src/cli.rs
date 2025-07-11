@@ -1,8 +1,10 @@
 use crate::core::story::{Passage, StoryData, StoryFormat};
-use crate::pipeline::nodes::{
+use crate::js::ScriptManager;
+use crate::pipeline::nodes::basic::{
     DataAggregatorNode, FileChangeDetectorNode, FileCollectorNode, FileParserNode, FileWriterNode,
     HtmlGeneratorNode,
 };
+use crate::pipeline::nodes::script::{DataProcessorNode, HtmlProcessorNode};
 use crate::pipeline::{PipeMap, Pipeline};
 use crate::util::file::{get_media_passage_type, is_support_file_with_base64};
 use clap::{Parser, Subcommand};
@@ -193,8 +195,11 @@ async fn build_once(
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting pipeline-based build process...");
 
+    // Create script manager for default scripts directory
+    let script_manager = ScriptManager::default();
+
     // Create the build pipeline
-    let pipeline = Pipeline::new("TweersBuildPipeline")
+    let mut pipeline = Pipeline::new("TweersBuildPipeline")
         .with_external_inputs(vec![
             "sources".to_string(),
             "base64".to_string(),
@@ -205,9 +210,23 @@ async fn build_once(
         .add_node(Box::new(FileCollectorNode))?
         .add_node(Box::new(FileChangeDetectorNode))?
         .add_node(Box::new(FileParserNode))?
-        .add_node(Box::new(DataAggregatorNode))?
-        .add_node(Box::new(HtmlGeneratorNode))?
-        .add_node(Box::new(FileWriterNode))?;
+        .add_node(Box::new(DataAggregatorNode))?;
+
+    // Add data processor node if there are data scripts (before HTML generation)
+    if script_manager.has_data_scripts() {
+        pipeline = pipeline.add_node(Box::new(DataProcessorNode::new(script_manager.clone())?))?;
+    }
+
+    // Continue with HTML generation
+    pipeline = pipeline.add_node(Box::new(HtmlGeneratorNode))?;
+
+    // Add HTML processor node if there are HTML scripts
+    if script_manager.has_html_scripts() {
+        pipeline = pipeline.add_node(Box::new(HtmlProcessorNode::new(script_manager.clone())?))?;
+    }
+
+    // Add file writer node
+    pipeline = pipeline.add_node(Box::new(FileWriterNode))?;
 
     // Prepare initial data
     let mut pipe_data = PipeMap::new();

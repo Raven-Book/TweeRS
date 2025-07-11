@@ -98,9 +98,7 @@ impl TweeParser {
                 }
                 Err(e) => {
                     return Err(std::format!(
-                        "Failed to parse StoryData JSON: {}. \nContent: '{}'",
-                        e,
-                        content
+                        "Failed to parse StoryData JSON: {e}. \nContent: '{content}'"
                     ));
                 }
             }
