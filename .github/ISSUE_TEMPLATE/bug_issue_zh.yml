@@ -1,0 +1,91 @@
+name: "问题反馈"
+description: "反馈你遇到的问题/BUG"
+labels: [ "bug?" ]
+body:
+  - type: dropdown
+    id: will-contribute
+    attributes:
+      label: 是否愿意协助修复？
+      description: 如果此问题是你打算协助修复的，请告知我们便避免重复劳动
+      options:
+        - 否
+        - 是
+        - 不确定
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: usage-scenario
+    attributes:
+      label: 使用场景
+      description: 请选择问题出现的使用场景
+      options:
+        - 构建文件
+        - 文件监听
+        - twee注入
+        - base64
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本号
+      description: 使用的 TweeRS 版本
+      placeholder: "v0.1.7"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 请提供运行环境相关信息
+      placeholder: |
+        例如:
+        - 操作系统: Windows 11
+        - 故事格式: SugarCube / Harlowe / 等
+        - 其他相关信息
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 详细描述遇到的问题，包括期望行为和实际行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: recurrent
+    attributes:
+      label: 复现步骤
+      description: 提供详细的问题复现步骤
+    validations:
+      required: true
+      
+  - type: textarea
+    id: log
+    attributes:
+      label: 错误日志
+      description: 如果有错误信息或日志输出，请完整粘贴
+      placeholder: 粘贴完整的错误信息或控制台输出
+      render: Text
+
+  - type: textarea
+    id: replenish
+    attributes:
+      label: 补充信息
+      description: 其他可能有助于解决问题的信息
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 已阅读项目文档和 README
+          required: true
+        - label: 已搜索 issues 确认无重复问题
+          required: true
+        - label: 反馈内容不包含个人隐私信息
+          required: true
