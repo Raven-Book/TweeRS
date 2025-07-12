@@ -14,7 +14,7 @@ impl Default for ScriptConfig {
             .ok()
             .and_then(|exe_path| exe_path.parent().map(|p| p.join("scripts")))
             .unwrap_or_else(|| PathBuf::from("scripts"));
-        
+
         Self {
             scripts_dir,
             auto_execute: true,
