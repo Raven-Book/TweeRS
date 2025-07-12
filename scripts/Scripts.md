@@ -1,5 +1,5 @@
 # Scripts
-> 可加入 Q 群或发起 Pull Request 来提交你的脚本
+> 通过 Pull Request 提交你的脚本
 
 ## SugarCube 2.37.3
 
