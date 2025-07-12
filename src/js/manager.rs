@@ -10,8 +10,13 @@ pub struct ScriptConfig {
 
 impl Default for ScriptConfig {
     fn default() -> Self {
+        let scripts_dir = std::env::current_exe()
+            .ok()
+            .and_then(|exe_path| exe_path.parent().map(|p| p.join("scripts")))
+            .unwrap_or_else(|| PathBuf::from("scripts"));
+        
         Self {
-            scripts_dir: PathBuf::from("scripts"),
+            scripts_dir,
             auto_execute: true,
         }
     }
