@@ -1,7 +1,7 @@
 # TweeRS
 > [Scrips](./scripts/Scripts.md) 内有可供使用的注入脚本
 
-当前版本: `0.1.8`
+当前版本: `0.1.8-1`
 
 ## 1. 项目简介
 
@@ -15,22 +15,76 @@
 **语法：**
 
 ```bash
-tweers build <source_dir> -o <output_dir> -t -b -w
+tweers build <source_dir> [OPTIONS]
 ```
 
 **参数：**
 
-- `<source_dir>`：输入文件路径
-- `-o <output_dir>`：输出文件路径
-- `-b` 将资源文件转为base64打包在片段中
-- `-w` 监听文件变化
-- `-t` 测试模式
+- `<source_dir>`：输入文件路径（必需），可以是文件或目录
+- `-o, --output-path <output_dir>`：输出文件路径（默认：`index.html`）
+- `-b, --base64`：将资源文件转为 base64 打包在片段中
+- `-w, --watch`：启用文件监听模式，自动重新构建
+- `-t, --is-debug`：启用调试模式，输出详细日志信息
 
-#### 2.1.1 pack 命令
-> 下载 [ffmpeg](https://ffmpeg.org/) 后可使用 
+**示例：**
 
 ```bash
-tweers pack <source_dir> -a <assets_dir> -f  
+# 基本构建
+tweers build story/
+
+# 指定输出路径
+tweers build story/ -o dist/index.html
+
+# 启用 base64 模式打包媒体文件
+tweers build story/ -o dist/index.html -b
+
+# 启用监听模式
+tweers build story/ -w
+
+# 启用调试模式
+tweers build story/ -t
+
+# 组合使用多个选项
+tweers build story/ -o dist/index.html -b -w -t
+```
+
+#### 2.1.2 pack 命令
+构建故事文件并压缩资源为打包文件。需要 [ffmpeg](https://ffmpeg.org/) 支持媒体压缩。
+
+**语法：**
+
+```bash
+tweers pack <source_dir> [OPTIONS]
+```
+
+**参数：**
+
+- `<source_dir>`：输入文件路径（必需），可以是文件或目录
+- `-a, --assets <assets_dir>`：需要压缩的资源目录路径（可指定多个）
+- `-o, --output-path <output_path>`：输出压缩包路径（默认：`package.zip`，自动使用故事标题命名）
+- `-f, --fast-compression`：启用快速压缩模式（较低质量，较快速度）
+- `-t, --is-debug`：启用调试模式，输出详细日志信息
+
+**示例：**
+
+```bash
+# 基本打包（自动命名为故事标题.zip）
+tweers pack story/ -a assets/
+
+# 指定多个资源目录
+tweers pack story/ -a images/ -a audio/ -a videos/
+
+# 指定输出文件名
+tweers pack story/ -a assets/ -o my-story.zip
+
+# 启用快速压缩
+tweers pack story/ -a assets/ -f
+
+# 启用调试模式
+tweers pack story/ -a assets/ -t
+
+# 组合使用多个选项
+tweers pack story/ -a assets/ -o my-story.zip -f -t
 ```
 
 ## 3. twee 注入
@@ -110,5 +164,3 @@ tweers pack <source_dir> -a <assets_dir> -f
 - [ ] javascript 压缩混淆
 - [x] 支持图片/音频/视频等媒体资源压缩
 
-## 5. Link
-- Q群: 1044470765

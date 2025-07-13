@@ -41,6 +41,24 @@ impl PipeNode for AssetCompressorNode {
             return Ok(data);
         }
 
+        // Check ffmpeg availability
+        let ffmpeg_available = match check_ffmpeg_availability() {
+            Ok(available) => {
+                if !available {
+                    warn!("   FFmpeg not found. Media compression will be skipped.");
+                    warn!(
+                        "   Install FFmpeg from https://ffmpeg.org/ to enable media compression."
+                    );
+                    warn!("   Files will be included without compression.");
+                }
+                available
+            }
+            Err(e) => {
+                warn!("Failed to check FFmpeg availability: {}", e);
+                false
+            }
+        };
+
         let mut asset_file_map = Vec::new();
 
         for assets_dir in assets_dirs {
@@ -61,7 +79,7 @@ impl PipeNode for AssetCompressorNode {
                     relative_path
                 );
 
-                if is_media_file(&file_path) {
+                if is_media_file(&file_path) && ffmpeg_available {
                     match compress_media_file(&file_path, &relative_path, *fast_compression).await {
                         Ok((compressed_path, archive_path)) => {
                             asset_file_map.push((compressed_path, archive_path));
@@ -520,6 +538,27 @@ fn get_video_duration(file_path: &Path) -> Result<u64, String> {
         // Fallback: return 0 to disable progress percentage
         Ok(0)
     }
+}
+
+/// Check if ffmpeg and ffprobe are available
+fn check_ffmpeg_availability() -> Result<bool, String> {
+    use std::process::Command;
+
+    // Check ffmpeg
+    let ffmpeg_check = Command::new("ffmpeg").args(["-version"]).output();
+
+    if ffmpeg_check.is_err() {
+        return Ok(false);
+    }
+
+    // Check ffprobe
+    let ffprobe_check = Command::new("ffprobe").args(["-version"]).output();
+
+    if ffprobe_check.is_err() {
+        return Ok(false);
+    }
+
+    Ok(true)
 }
 
 /// Format bytes in human readable format
