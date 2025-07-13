@@ -1,5 +1,6 @@
 use crate::core::story::{Passage, StoryData, StoryFormat};
 use crate::js::ScriptManager;
+use crate::pipeline::nodes::asset::{ArchiveCreatorNode, AssetCompressorNode};
 use crate::pipeline::nodes::basic::{
     DataAggregatorNode, FileChangeDetectorNode, FileCollectorNode, FileParserNode, FileWriterNode,
     HtmlGeneratorNode,
@@ -37,7 +38,24 @@ pub enum Commands {
         base64: bool,
     },
 
-    Zip {},
+    /// Build and pack with compressed assets
+    Pack {
+        /// Sources
+        #[arg(required = true)]
+        sources: Vec<PathBuf>,
+        /// Assets directories to compress
+        #[clap(short = 'a', long = "assets")]
+        assets_dirs: Vec<PathBuf>,
+        /// Output archive path
+        #[clap(short = 'o', long, default_value = "package.zip")]
+        output_path: PathBuf,
+        /// Enable fast compression (lower quality, faster speed)
+        #[clap(short = 'f', long)]
+        fast_compression: bool,
+        /// Debug mode
+        #[clap(short = 't', long)]
+        is_debug: bool,
+    },
 }
 
 /// TweeRS Command
@@ -69,6 +87,8 @@ pub struct BuildContext {
     pub is_debug: bool,
     /// Base64 encoding flag for media files
     pub base64: bool,
+    /// Assets directories for pack command
+    pub assets_dirs: Vec<PathBuf>,
 }
 
 impl Default for BuildContext {
@@ -86,6 +106,19 @@ impl BuildContext {
             file_cache: IndexMap::new(),
             is_debug,
             base64,
+            assets_dirs: Vec::new(),
+        }
+    }
+
+    pub fn with_assets(is_debug: bool, base64: bool, assets_dirs: Vec<PathBuf>) -> Self {
+        Self {
+            story_format: None,
+            format_name: String::new(),
+            format_version: String::new(),
+            file_cache: IndexMap::new(),
+            is_debug,
+            base64,
+            assets_dirs,
         }
     }
 
@@ -338,5 +371,101 @@ async fn watch_and_rebuild(
         }
     }
 
+    Ok(())
+}
+
+pub async fn pack_command(
+    sources: Vec<PathBuf>,
+    assets_dirs: Vec<PathBuf>,
+    output_path: PathBuf,
+    fast_compression: bool,
+    is_debug: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    debug!("Starting pack command");
+    debug!("Sources: {:?}", sources);
+    debug!("Assets directories: {:?}", assets_dirs);
+    debug!("Output archive: {:?}", output_path);
+
+    // Create build context
+    let mut context = BuildContext::with_assets(is_debug, true, assets_dirs.clone());
+
+    // Create temporary directory for HTML file
+    let temp_dir = std::env::temp_dir().join(format!("tweers_pack_{}", std::process::id()));
+    std::fs::create_dir_all(&temp_dir)?;
+
+    // First, run the build process to get story data
+    let temp_html = temp_dir.join("temp_index.html");
+    build_once(&sources, &temp_html, &mut context, false).await?;
+
+    // Get story title from cache for naming
+    let (all_passages, _) = context.get_all_cached_data();
+    let story_title = all_passages
+        .get("StoryTitle")
+        .map(|p| p.content.trim().to_string())
+        .filter(|title| !title.is_empty())
+        .unwrap_or_else(|| "story".to_string());
+
+    // Use story title for archive name if output_path is default
+    let actual_output_path = if output_path == PathBuf::from("package.zip") {
+        PathBuf::from(format!("{story_title}.zip"))
+    } else {
+        output_path
+    };
+
+    // Then, create pack pipeline with asset processing
+    pack_once(
+        &sources,
+        &assets_dirs,
+        &temp_html,
+        &actual_output_path,
+        fast_compression,
+        &mut context,
+    )
+    .await?;
+
+    // Clean up temporary directory
+    if temp_dir.exists() {
+        std::fs::remove_dir_all(&temp_dir)?;
+    }
+
+    Ok(())
+}
+
+/// Pack using pipeline system with asset compression
+async fn pack_once(
+    sources: &[PathBuf],
+    assets_dirs: &[PathBuf],
+    html_output_path: &Path,
+    archive_output_path: &Path,
+    fast_compression: bool,
+    context: &mut BuildContext,
+) -> Result<(), Box<dyn std::error::Error>> {
+    debug!("Starting pipeline-based pack process...");
+
+    // Create the pack pipeline
+    let pipeline = Pipeline::new("TweersPackPipeline")
+        .with_external_inputs(vec![
+            "sources".to_string(),
+            "assets_dirs".to_string(),
+            "html_output_path".to_string(),
+            "pack_output_path".to_string(),
+            "context".to_string(),
+        ])
+        .add_node(Box::new(AssetCompressorNode))?
+        .add_node(Box::new(ArchiveCreatorNode))?;
+
+    // Prepare initial data
+    let mut pipe_data = PipeMap::new();
+    pipe_data.insert("sources", sources.to_vec());
+    pipe_data.insert("assets_dirs", assets_dirs.to_vec());
+    pipe_data.insert("html_output_path", html_output_path.to_path_buf());
+    pipe_data.insert("pack_output_path", archive_output_path.to_path_buf());
+    pipe_data.insert("fast_compression", fast_compression);
+    pipe_data.insert("context", context.clone());
+
+    // Execute the pipeline
+    let _result = pipeline.execute(pipe_data).await?;
+
+    info!("Pack pipeline completed successfully");
     Ok(())
 }

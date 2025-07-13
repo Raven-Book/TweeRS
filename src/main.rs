@@ -1,8 +1,8 @@
 use clap::Parser;
 use std::fs::OpenOptions;
-use tracing::{error, info};
+use tracing::error;
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use tweers::cli::{Cli, Commands, build_command};
+use tweers::cli::{Cli, Commands, build_command, pack_command};
 use tweers::config::constants;
 
 #[tokio::main]
@@ -52,8 +52,21 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         } => {
             build_command(sources, output_path, watch, is_debug, base64).await?;
         }
-        Commands::Zip {} => {
-            info!("Zip command not implemented yet");
+        Commands::Pack {
+            sources,
+            assets_dirs,
+            output_path,
+            fast_compression,
+            is_debug,
+        } => {
+            pack_command(
+                sources,
+                assets_dirs,
+                output_path,
+                fast_compression,
+                is_debug,
+            )
+            .await?;
         }
     }
     Ok(())

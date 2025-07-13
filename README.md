@@ -1,7 +1,7 @@
 # TweeRS
 > [Scrips](./scripts/Scripts.md) 内有可供使用的注入脚本
 
-当前版本: `0.1.7-1`
+当前版本: `0.1.8`
 
 ## 1. 项目简介
 
@@ -25,6 +25,12 @@ tweers build <source_dir> -o <output_dir> -t -b -w
 - `-b` 将资源文件转为base64打包在片段中
 - `-w` 监听文件变化
 - `-t` 测试模式
+
+#### 2.1.1 pack 命令
+
+```bash
+tweers pack <source_dir> -a <assets_dir> -f  
+```
 
 ## 3. twee 注入
 > 欢迎投稿 `twee` 通用注入脚本
