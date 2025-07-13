@@ -16,8 +16,6 @@ indexmap = { version = "2.9.0", features = ["serde"] }
 base64 = "0.22"
 async-trait="0.1.88"
 thiserror = "2.0.12"
-toml = "0.9.1"
-ffmpeg-next = "7.1.0"
 zip = "4.3.0"
 # Rust V8
 v8 = "137.2.0"
