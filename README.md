@@ -10,7 +10,7 @@
 ### 2.1. 命令参数说明
 
 #### 2.1.1 build 命令
-将 Twee 格式的故事文件构建为 HTML 输出。
+将 Twee 文件构建为 HTML 并输出
 
 **语法：**
 
@@ -20,7 +20,7 @@ tweers build <source_dir> [OPTIONS]
 
 **参数：**
 
-- `<source_dir>`：输入文件路径（必需），可以是文件或目录
+- `<source_dir>`：输入文件路径（必需）
 - `-o, --output-path <output_dir>`：输出文件路径（默认：`index.html`）
 - `-b, --base64`：将资源文件转为 base64 打包在片段中
 - `-w, --watch`：启用文件监听模式，自动重新构建
@@ -49,8 +49,9 @@ tweers build story/ -o dist/index.html -b -w -t
 ```
 
 #### 2.1.2 pack 命令
-构建故事文件并压缩资源为打包文件。需要 [ffmpeg](https://ffmpeg.org/) 支持媒体压缩。
+> [可选] 下载 [ffmpeg](https://ffmpeg.org/) 支持音视频文件压缩
 
+构建 HTML 并压缩资源打包文件
 **语法：**
 
 ```bash
@@ -59,10 +60,10 @@ tweers pack <source_dir> [OPTIONS]
 
 **参数：**
 
-- `<source_dir>`：输入文件路径（必需），可以是文件或目录
+- `<source_dir>`：输入文件路径（必需）
 - `-a, --assets <assets_dir>`：需要压缩的资源目录路径（可指定多个）
 - `-o, --output-path <output_path>`：输出压缩包路径（默认：`package.zip`，自动使用故事标题命名）
-- `-f, --fast-compression`：启用快速压缩模式（较低质量，较快速度）
+- `-f, --fast-compression`：启用快速压缩模式
 - `-t, --is-debug`：启用调试模式，输出详细日志信息
 
 **示例：**
@@ -164,3 +165,5 @@ tweers pack story/ -a assets/ -o my-story.zip -f -t
 - [ ] javascript 压缩混淆
 - [x] 支持图片/音频/视频等媒体资源压缩
 
+## 5. Link
+- Q群: 1044470765
