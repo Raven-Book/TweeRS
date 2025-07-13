@@ -27,6 +27,7 @@ tweers build <source_dir> -o <output_dir> -t -b -w
 - `-t` 测试模式
 
 #### 2.1.1 pack 命令
+> 下载 [ffmpeg](https://ffmpeg.org/) 后可使用 
 
 ```bash
 tweers pack <source_dir> -a <assets_dir> -f  
@@ -106,7 +107,8 @@ tweers pack <source_dir> -a <assets_dir> -f
 - [ ] 支持 Harlowe 故事格式
 - [ ] 完善英文文档
 - [ ] 集成 NPM 包支持
-- [ ] 支持图片/音频/视频等媒体资源压缩
+- [ ] javascript 压缩混淆
+- [x] 支持图片/音频/视频等媒体资源压缩
 
 ## 5. Link
 - Q群: 1044470765
