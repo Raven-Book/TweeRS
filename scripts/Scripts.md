@@ -21,3 +21,14 @@
 :: en_片段1
 passage1
 ```
+
+### [var_color.js](./data/sugarcube/var_color.js)
+
+通过正则替换指定变量的颜色，修改 `Color` 即可.
+
+```
+const Colors = {
+    "_ele": "green",
+    "$backpack['石头']": "blue",
+};
+```
