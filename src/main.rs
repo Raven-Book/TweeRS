@@ -9,7 +9,8 @@ use tweers::config::constants;
 async fn main() {
     let log_file = OpenOptions::new()
         .create(true)
-        .append(true)
+        .write(true)
+        .truncate(true)
         .open(constants::LOG_FILE)
         .expect("Failed to create log file");
 
@@ -48,7 +49,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             output_path,
             sources,
             is_debug,
-            base64,
+            base64
         } => {
             build_command(sources, output_path, watch, is_debug, base64).await?;
         }

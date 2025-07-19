@@ -49,7 +49,7 @@ impl ScriptManager {
         self.html_scripts.clear();
 
         if !self.scripts_dir.exists() {
-            info!("Scripts directory does not exist: {:?}", self.scripts_dir);
+            debug!("Scripts directory does not exist: {:?}", self.scripts_dir);
             return Ok(());
         }
 
@@ -85,7 +85,7 @@ impl ScriptManager {
         self.data_scripts.sort();
         self.html_scripts.sort();
 
-        info!(
+        debug!(
             "Discovered {} data scripts and {} HTML scripts",
             self.data_scripts.len(),
             self.html_scripts.len()
