@@ -96,7 +96,7 @@ impl PipeNode for DataProcessorNode {
                         &script_content,
                     ) {
                         Ok(result) => {
-                            debug!("Script result: {}", result);
+                            // debug!("Script result: {}", result);
                             // Deserialize modified data
                             match serde_json::from_str::<serde_json::Value>(&result) {
                                 Ok(processed_data) => {
