@@ -1,6 +1,6 @@
 use crate::js::error::{ScriptError, ScriptResult};
 use std::path::PathBuf;
-use tracing::{debug, info};
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct ScriptConfig {

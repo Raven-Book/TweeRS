@@ -1,7 +1,7 @@
 # TweeRS
 > [Scrips](./scripts/Scripts.md) 内有可供使用的注入脚本
 
-当前版本: `0.1.8-1`
+当前版本: `0.1.9`
 
 ## 1. 项目简介
 
@@ -22,6 +22,7 @@ tweers build <source_dir> [OPTIONS]
 
 - `<source_dir>`：输入文件路径（必需）
 - `-o, --output-path <output_dir>`：输出文件路径（默认：`index.html`）
+- `-s, --start-passage <passage_name>`：指定故事的起始片段
 - `-b, --base64`：将资源文件转为 base64 打包在片段中
 - `-w, --watch`：启用文件监听模式，自动重新构建
 - `-t, --is-debug`：启用调试模式，输出详细日志信息
@@ -44,8 +45,11 @@ tweers build story/ -w
 # 启用调试模式
 tweers build story/ -t
 
+# 指定起始片段
+tweers build story/ -s Start
+
 # 组合使用多个选项
-tweers build story/ -o dist/index.html -b -w -t
+tweers build story/ -o dist/index.html -b -w -t -s "Prologue A"
 ```
 
 #### 2.1.2 pack 命令

@@ -299,6 +299,17 @@ impl PipeNode for DataAggregatorNode {
                 debug!("Set story name from StoryTitle passage: {:?}", data.name);
             }
 
+            if let Some(ref start_passage) = context.start_passage {
+                if all_passages.get(start_passage).is_none() {
+                    return Err(format!(
+                        "Start passage '{start_passage}' does not exist in the loaded passages"
+                    )
+                    .into());
+                }
+
+                data.start = Some(start_passage.clone());
+            }
+
             // Validate StoryData
             data.validate()
                 .map_err(|e| format!("StoryData validation failed: {e}"))?;

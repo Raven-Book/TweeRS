@@ -49,9 +49,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             output_path,
             sources,
             is_debug,
-            base64
+            base64,
+            start_passage,
         } => {
-            build_command(sources, output_path, watch, is_debug, base64).await?;
+            build_command(sources, output_path, watch, is_debug, base64, start_passage).await?;
         }
         Commands::Pack {
             sources,

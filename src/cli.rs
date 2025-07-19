@@ -36,6 +36,9 @@ pub enum Commands {
         /// Convert images to Base64 fragments
         #[clap(short, long)]
         base64: bool,
+        /// Start passage name
+        #[clap(short = 's', long)]
+        start_passage: Option<String>,
     },
 
     /// Build and pack with compressed assets
@@ -89,16 +92,18 @@ pub struct BuildContext {
     pub base64: bool,
     /// Assets directories for pack command
     pub assets_dirs: Vec<PathBuf>,
+    /// Start passage name
+    pub start_passage: Option<String>,
 }
 
 impl Default for BuildContext {
     fn default() -> Self {
-        Self::new(false, false)
+        Self::new(false, false, None)
     }
 }
 
 impl BuildContext {
-    pub fn new(is_debug: bool, base64: bool) -> Self {
+    pub fn new(is_debug: bool, base64: bool, start_passage: Option<String>) -> Self {
         Self {
             story_format: None,
             format_name: String::new(),
@@ -107,6 +112,7 @@ impl BuildContext {
             is_debug,
             base64,
             assets_dirs: Vec::new(),
+            start_passage,
         }
     }
 
@@ -119,6 +125,7 @@ impl BuildContext {
             is_debug,
             base64,
             assets_dirs,
+            start_passage: None,
         }
     }
 
@@ -200,14 +207,16 @@ pub async fn build_command(
     watch: bool,
     is_debug: bool,
     base64: bool,
+    start_passage: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting build command");
     debug!("Sources: {:?}", sources);
     debug!("Output: {:?}", dist);
     debug!("Watch mode: {}", watch);
     debug!("Base64 mode: {}", base64);
+    debug!("Start passage: {:?}", start_passage);
 
-    let mut context = BuildContext::new(is_debug, base64);
+    let mut context = BuildContext::new(is_debug, base64, start_passage);
 
     build_once(&sources, &dist, &mut context, false).await?;
 
