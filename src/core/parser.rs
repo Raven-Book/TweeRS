@@ -104,24 +104,16 @@ impl TweeParser {
             }
         } else if name == "StoryTitle" {
             *context.story_title = Some(content.clone());
-            let passage = Passage {
-                name: name.clone(),
-                tags,
-                position,
-                size,
-                content,
-            };
-            context.passages.insert(name, passage);
-        } else {
-            let passage = Passage {
-                name: name.clone(),
-                tags,
-                position,
-                size,
-                content,
-            };
-            context.passages.insert(name, passage);
         }
+
+        let passage = Passage {
+            name: name.clone(),
+            tags,
+            position,
+            size,
+            content,
+        };
+        context.passages.insert(name, passage);
 
         Ok(())
     }
