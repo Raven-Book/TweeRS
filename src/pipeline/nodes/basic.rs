@@ -203,7 +203,7 @@ impl FileParserNode {
                             let base64_content = general_purpose::STANDARD.encode(&binary_content);
                             let mime_prefix = get_mime_type_prefix(file_path);
                             let full_content = format!("{mime_prefix}{base64_content}");
-                            let passage_name = file_path.to_string_lossy().to_string();
+                            let passage_name = normalize_media_path(&file_path.to_string_lossy());
 
                             let mut passages = IndexMap::new();
                             let passage = Passage {
@@ -436,4 +436,15 @@ impl PipeNode for FileWriterNode {
         data.insert("success", true);
         Ok(data)
     }
+}
+
+/// Normalize media file path for cross-platform consistency
+fn normalize_media_path(path_str: &str) -> String {
+    let mut normalized = path_str.replace('\\', "/");
+
+    if normalized.starts_with("./") {
+        normalized = normalized[2..].to_string();
+    }
+
+    normalized
 }
