@@ -1,7 +1,7 @@
 # TweeRS
 > [Scrips](./scripts/Scripts.md) 内有可供使用的注入脚本
 
-当前版本: `0.1.11`
+当前版本: `0.1.12`
 
 ## 1. 项目简介
 
@@ -157,7 +157,7 @@ tweers pack story/ -a assets/ -o my-story.zip -f -t
         └── 01-theme.js     - 主题样式注入
 ```
 
-## 4. Features
+## 5. Features
 - [x] 增加正则匹配模块与JS注入模块
 - [ ] 支持 import/export 语法, 以控制 JavaScript/CSS 资源加载顺序
 - [ ] 修复文件监听和异步处理中的逻辑问题
@@ -168,6 +168,7 @@ tweers pack story/ -a assets/ -o my-story.zip -f -t
 - [ ] 集成 NPM 包支持
 - [ ] javascript 压缩混淆
 - [x] 支持图片/音频/视频等媒体资源压缩
+- [x] 支持 Excel 文件
 
-## 5. Link
+## 7. Link
 - Q群: 1044470765

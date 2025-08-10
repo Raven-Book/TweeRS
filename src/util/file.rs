@@ -13,7 +13,11 @@ pub fn is_support_file(path: &Path) -> bool {
         let ext_str = ext_str.as_str();
         return constants::TWEE_EXTENSIONS.contains(&ext_str)
             || ext_str == "js"
-            || ext_str == "css";
+            || ext_str == "css"
+            || ext_str == "xlsx"
+            || ext_str == "xlsm"
+            || ext_str == "xlsb"
+            || ext_str == "xls";
     }
     false
 }

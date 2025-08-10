@@ -72,12 +72,11 @@ impl Default for PipeMap {
 }
 
 pub mod core;
-pub mod error;
 
 pub mod nodes;
 
+pub use crate::error::PipelineError;
 pub use core::{PipeNode, Pipeline};
-pub use error::PipelineError;
 
 #[cfg(test)]
 mod tests {

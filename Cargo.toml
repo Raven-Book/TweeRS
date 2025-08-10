@@ -1,6 +1,6 @@
 [package]
 name = "tweers"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2024"
 
 [dependencies]
@@ -19,3 +19,5 @@ thiserror = "2.0.12"
 zip = "4.3.0"
 # Rust V8
 v8 = "137.2.0"
+# Excel
+calamine = "0.30.0"

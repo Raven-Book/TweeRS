@@ -1,4 +1,4 @@
-use crate::js::error::{ScriptError, ScriptResult};
+use crate::error::{JSResult, ScriptError};
 use std::path::PathBuf;
 use tracing::debug;
 
@@ -30,7 +30,7 @@ pub struct ScriptManager {
 }
 
 impl ScriptManager {
-    pub fn new(config: ScriptConfig) -> ScriptResult<Self> {
+    pub fn new(config: ScriptConfig) -> JSResult<Self> {
         let mut manager = Self {
             scripts_dir: config.scripts_dir,
             data_scripts: Vec::new(),
@@ -44,7 +44,7 @@ impl ScriptManager {
         Ok(manager)
     }
 
-    pub fn discover_scripts(&mut self) -> ScriptResult<()> {
+    pub fn discover_scripts(&mut self) -> JSResult<()> {
         self.data_scripts.clear();
         self.html_scripts.clear();
 
@@ -111,7 +111,7 @@ impl ScriptManager {
     }
 
     /// Add a single data processing script
-    pub fn add_data_script(&mut self, script_path: PathBuf) -> ScriptResult<()> {
+    pub fn add_data_script(&mut self, script_path: PathBuf) -> JSResult<()> {
         if !script_path.exists() {
             return Err(ScriptError::FileNotFound(script_path));
         }
@@ -128,7 +128,7 @@ impl ScriptManager {
     }
 
     /// Add a single HTML processing script
-    pub fn add_html_script(&mut self, script_path: PathBuf) -> ScriptResult<()> {
+    pub fn add_html_script(&mut self, script_path: PathBuf) -> JSResult<()> {
         if !script_path.exists() {
             return Err(ScriptError::FileNotFound(script_path));
         }
@@ -144,7 +144,7 @@ impl ScriptManager {
         Ok(())
     }
 
-    pub fn refresh(&mut self) -> ScriptResult<()> {
+    pub fn refresh(&mut self) -> JSResult<()> {
         self.discover_scripts()
     }
 }

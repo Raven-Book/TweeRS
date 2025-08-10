@@ -1,4 +1,4 @@
-use crate::js::error::{ScriptError, ScriptResult};
+use crate::error::{JSResult, ScriptError};
 use std::sync::Once;
 use tracing::debug;
 
@@ -42,7 +42,7 @@ impl ScriptEngine {
         global.set(scope, console_key.into(), console_obj.into());
     }
 
-    pub fn new() -> ScriptResult<Self> {
+    pub fn new() -> JSResult<Self> {
         // Initialize V8 (execute only once)
         V8_INIT.call_once(|| {
             let platform = v8::new_default_platform(0, false).make_shared();
@@ -60,7 +60,7 @@ impl ScriptEngine {
         data_json: &str,
         format_json: &str,
         script: &str,
-    ) -> ScriptResult<String> {
+    ) -> JSResult<String> {
         let scope = &mut v8::HandleScope::new(&mut self.isolate);
         let context = v8::Context::new(scope, v8::ContextOptions::default());
         let scope = &mut v8::ContextScope::new(scope, context);
@@ -107,7 +107,7 @@ impl ScriptEngine {
         passages_json: &str,
         format_json: &str,
         script: &str,
-    ) -> ScriptResult<String> {
+    ) -> JSResult<String> {
         let scope = &mut v8::HandleScope::new(&mut self.isolate);
         let context = v8::Context::new(scope, v8::ContextOptions::default());
         let scope = &mut v8::ContextScope::new(scope, context);

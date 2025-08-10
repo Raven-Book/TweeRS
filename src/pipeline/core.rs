@@ -1,4 +1,5 @@
-use crate::pipeline::{PipeMap, error::PipelineError};
+use crate::error::PipelineError;
+use crate::pipeline::PipeMap;
 use async_trait::async_trait;
 use tracing::debug;
 

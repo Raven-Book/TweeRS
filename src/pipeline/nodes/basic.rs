@@ -2,6 +2,7 @@ use crate::cli::BuildContext;
 use crate::core::output::HtmlOutputHandler;
 use crate::core::parser::TweeParser;
 use crate::core::story::{Passage, StoryData};
+use crate::excel::parser::ExcelParser;
 use crate::pipeline::{PipeMap, PipeNode};
 use crate::util::file::{collect_files_with_base64, get_media_passage_type, get_mime_type_prefix};
 use async_trait::async_trait;
@@ -193,6 +194,37 @@ impl FileParserNode {
                         content,
                     };
                     passages.insert(passage_name, passage);
+                    Ok((passages, None))
+                }
+                "xlsx" | "xlsm" | "xlsb" | "xls" => {
+                    let mut passages = IndexMap::new();
+
+                    let passage_name = file_path.to_string_lossy().to_string();
+
+                    // Parse Excel file and generate JavaScript passages
+                    match ExcelParser::parse_file(file_path).await {
+                        Ok(js_code) => {
+                            if !js_code.is_empty() {
+                                let passage = Passage {
+                                    name: passage_name.clone(),
+                                    tags: Some("init script".to_string()),
+                                    position: None,
+                                    size: None,
+                                    content: js_code,
+                                };
+
+                                passages.insert(passage_name, passage);
+                                debug!(
+                                    "Created JavaScript passage from Excel file: {:?}",
+                                    file_path
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Failed to parse Excel file {:?}: {}", file_path, e);
+                        }
+                    }
+
                     Ok((passages, None))
                 }
                 _ => {

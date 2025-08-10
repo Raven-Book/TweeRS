@@ -1,6 +1,7 @@
 use crate::cli::BuildContext;
 use crate::core::story::{Passage, StoryData};
-use crate::js::{ScriptEngine, ScriptError, ScriptManager};
+use crate::error::ScriptError;
+use crate::js::{ScriptEngine, ScriptManager};
 use crate::pipeline::{PipeMap, PipeNode};
 use async_trait::async_trait;
 use indexmap::IndexMap;
