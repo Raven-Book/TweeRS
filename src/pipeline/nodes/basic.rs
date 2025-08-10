@@ -229,25 +229,25 @@ impl FileParserNode {
                 }
                 _ => {
                     // Check for media files with base64 support
-                    if context.base64 {
-                        if let Some(media_type) = get_media_passage_type(file_path) {
-                            let binary_content = tokio::fs::read(file_path).await?;
-                            let base64_content = general_purpose::STANDARD.encode(&binary_content);
-                            let mime_prefix = get_mime_type_prefix(file_path);
-                            let full_content = format!("{mime_prefix}{base64_content}");
-                            let passage_name = normalize_media_path(&file_path.to_string_lossy());
+                    if context.base64
+                        && let Some(media_type) = get_media_passage_type(file_path)
+                    {
+                        let binary_content = tokio::fs::read(file_path).await?;
+                        let base64_content = general_purpose::STANDARD.encode(&binary_content);
+                        let mime_prefix = get_mime_type_prefix(file_path);
+                        let full_content = format!("{mime_prefix}{base64_content}");
+                        let passage_name = normalize_media_path(&file_path.to_string_lossy());
 
-                            let mut passages = IndexMap::new();
-                            let passage = Passage {
-                                name: passage_name.clone(),
-                                tags: Some(media_type.to_string()),
-                                position: None,
-                                size: None,
-                                content: full_content,
-                            };
-                            passages.insert(passage_name, passage);
-                            return Ok((passages, None));
-                        }
+                        let mut passages = IndexMap::new();
+                        let passage = Passage {
+                            name: passage_name.clone(),
+                            tags: Some(media_type.to_string()),
+                            position: None,
+                            size: None,
+                            content: full_content,
+                        };
+                        passages.insert(passage_name, passage);
+                        return Ok((passages, None));
                     }
                     // Parse as Twee file
                     let content = tokio::fs::read_to_string(file_path).await?;

@@ -218,11 +218,11 @@ fn process_directory_with_base64(
     base64_enabled: bool,
 ) -> std::pin::Pin<Box<dyn Future<Output = Result<(), std::io::Error>> + Send>> {
     Box::pin(async move {
-        if let Some(dir_name) = dir.file_name() {
-            if dir_name.to_string_lossy().starts_with('.') {
-                debug!("Skipping hidden directory: {:?}", dir);
-                return Ok(());
-            }
+        if let Some(dir_name) = dir.file_name()
+            && dir_name.to_string_lossy().starts_with('.')
+        {
+            debug!("Skipping hidden directory: {:?}", dir);
+            return Ok(());
         }
 
         debug!("Starting to process directory: {:?}", dir);
@@ -276,7 +276,7 @@ mod tests {
                 debug!("Count of found files: {:?}", paths.len());
                 debug!("Found files: {:?}", paths);
             }
-            Err(e) => panic!("{:?}", e),
+            Err(e) => panic!("{e:?}"),
         }
     }
 }

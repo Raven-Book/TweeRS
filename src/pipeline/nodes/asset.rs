@@ -372,30 +372,30 @@ async fn compress_media_file(
         if let Some(stdout) = child.stdout.take() {
             let reader = BufReader::new(stdout);
             for line in reader.lines().map_while(Result::ok) {
-                if let Some(time_str) = line.strip_prefix("out_time_ms=") {
-                    if let Ok(time_ms) = time_str.parse::<u64>() {
-                        let current_sec = time_ms / 1000000;
-                        let progress = if duration > 0 {
-                            (current_sec as f64 / duration as f64 * 100.0).min(100.0)
-                        } else {
-                            0.0
-                        };
+                if let Some(time_str) = line.strip_prefix("out_time_ms=")
+                    && let Ok(time_ms) = time_str.parse::<u64>()
+                {
+                    let current_sec = time_ms / 1000000;
+                    let progress = if duration > 0 {
+                        (current_sec as f64 / duration as f64 * 100.0).min(100.0)
+                    } else {
+                        0.0
+                    };
 
-                        // Create progress bar
-                        let bar_width = 30;
-                        let filled = (progress / 100.0 * bar_width as f64) as usize;
-                        let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
+                    // Create progress bar
+                    let bar_width = 30;
+                    let filled = (progress / 100.0 * bar_width as f64) as usize;
+                    let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
 
-                        print!(
-                            "\r[{}] {:.1}% ({}:{:02}:{:02})",
-                            bar,
-                            progress,
-                            current_sec / 3600,
-                            (current_sec % 3600) / 60,
-                            current_sec % 60
-                        );
-                        std::io::Write::flush(&mut std::io::stdout()).ok();
-                    }
+                    print!(
+                        "\r[{}] {:.1}% ({}:{:02}:{:02})",
+                        bar,
+                        progress,
+                        current_sec / 3600,
+                        (current_sec % 3600) / 60,
+                        current_sec % 60
+                    );
+                    std::io::Write::flush(&mut std::io::stdout()).ok();
                 }
             }
         }

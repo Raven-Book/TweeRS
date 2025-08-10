@@ -137,21 +137,21 @@ impl BuildContext {
         if let Some(cached) = self.file_cache.get(path) {
             // If base64 is enabled and this is a media file, check if it was previously
             // processed as a media file (has media-related tags)
-            if self.base64 {
-                if let Some(media_type) = get_media_passage_type(path) {
-                    // Check if any cached passage for this file has the expected media tag
-                    let has_media_passage = cached
-                        .passages
-                        .values()
-                        .any(|p| p.tags.as_ref().is_some_and(|tags| tags == media_type));
+            if self.base64
+                && let Some(media_type) = get_media_passage_type(path)
+            {
+                // Check if any cached passage for this file has the expected media tag
+                let has_media_passage = cached
+                    .passages
+                    .values()
+                    .any(|p| p.tags.as_ref().is_some_and(|tags| tags == media_type));
 
-                    if !has_media_passage {
-                        debug!(
-                            "Media file {:?} not previously processed as media, forcing reprocess",
-                            path
-                        );
-                        return Ok(true);
-                    }
+                if !has_media_passage {
+                    debug!(
+                        "Media file {:?} not previously processed as media, forcing reprocess",
+                        path
+                    );
+                    return Ok(true);
                 }
             }
 
@@ -320,11 +320,11 @@ async fn watch_and_rebuild(
         if source.is_dir() {
             watcher.watch(source, RecursiveMode::Recursive)?;
             debug!("Watching directory: {:?}", source);
-        } else if source.is_file() {
-            if let Some(parent) = source.parent() {
-                watcher.watch(parent, RecursiveMode::NonRecursive)?;
-                debug!("Watching file parent directory: {:?}", parent);
-            }
+        } else if source.is_file()
+            && let Some(parent) = source.parent()
+        {
+            watcher.watch(parent, RecursiveMode::NonRecursive)?;
+            debug!("Watching file parent directory: {:?}", parent);
         }
     }
 

@@ -360,20 +360,19 @@ impl ExcelParser {
                 for (header_idx, header) in table.headers.iter().enumerate() {
                     if let Some(hash_pos) = header.find('#') {
                         let array_name = &header[..hash_pos];
-                        if let Ok(index) = header[hash_pos + 1..].parse::<usize>() {
-                            if let Some(field_value) = item.fields.get(header) {
-                                if !field_value.is_empty() {
-                                    // Get the type for this specific indexed field
-                                    let field_type = type_registry
-                                        .get_type_by_index(header_idx)
-                                        .unwrap_or(&DataType::String)
-                                        .clone();
-                                    array_fields
-                                        .entry(array_name.to_string())
-                                        .or_default()
-                                        .push((index, field_value.clone(), field_type));
-                                }
-                            }
+                        if let Ok(index) = header[hash_pos + 1..].parse::<usize>()
+                            && let Some(field_value) = item.fields.get(header)
+                            && !field_value.is_empty()
+                        {
+                            // Get the type for this specific indexed field
+                            let field_type = type_registry
+                                .get_type_by_index(header_idx)
+                                .unwrap_or(&DataType::String)
+                                .clone();
+                            array_fields
+                                .entry(array_name.to_string())
+                                .or_default()
+                                .push((index, field_value.clone(), field_type));
                         }
                     }
                 }

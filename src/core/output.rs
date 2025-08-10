@@ -79,51 +79,52 @@ impl HtmlOutputHandler {
             let format_changed =
                 context.format_name != data.format || context.format_version != data.format_version;
 
-            if !format_changed && context.story_format.is_some() {
-                if let Some(story_format) = &context.story_format {
-                    let name = data
-                        .name
-                        .as_ref()
-                        .ok_or("Story name is required (missing StoryTitle passage?)")?;
+            if !format_changed
+                && context.story_format.is_some()
+                && let Some(story_format) = &context.story_format
+            {
+                let name = data
+                    .name
+                    .as_ref()
+                    .ok_or("Story name is required (missing StoryTitle passage?)")?;
 
-                    let ifid = if data.ifid.is_empty() {
-                        return Err("IFID is required in StoryData".into());
-                    } else {
-                        &data.ifid
-                    };
+                let ifid = if data.ifid.is_empty() {
+                    return Err("IFID is required in StoryData".into());
+                } else {
+                    &data.ifid
+                };
 
-                    let start_passage = data
-                        .start
-                        .as_deref()
-                        .or_else(|| {
-                            if passages.contains_key("Start") {
-                                Some("Start")
-                            } else {
-                                passages.keys().next().map(|k| k.as_str())
-                            }
-                        })
-                        .ok_or("No start passage found")?;
+                let start_passage = data
+                    .start
+                    .as_deref()
+                    .or_else(|| {
+                        if passages.contains_key("Start") {
+                            Some("Start")
+                        } else {
+                            passages.keys().next().map(|k| k.as_str())
+                        }
+                    })
+                    .ok_or("No start passage found")?;
 
-                    let zoom = data.zoom.unwrap_or(1.0);
+                let zoom = data.zoom.unwrap_or(1.0);
 
-                    let story_info = StoryInfo {
-                        name,
-                        ifid,
-                        format: &data.format,
-                        format_version: &data.format_version,
-                        start_passage,
-                        zoom,
-                    };
-                    let story_data_xml =
-                        Self::get_twine2_data_chunk(passages, &story_info, data, context.is_debug)?;
+                let story_info = StoryInfo {
+                    name,
+                    ifid,
+                    format: &data.format,
+                    format_version: &data.format_version,
+                    start_passage,
+                    zoom,
+                };
+                let story_data_xml =
+                    Self::get_twine2_data_chunk(passages, &story_info, data, context.is_debug)?;
 
-                    let html = story_format
-                        .source
-                        .replace("{{STORY_NAME}}", name)
-                        .replace("{{STORY_DATA}}", &story_data_xml);
+                let html = story_format
+                    .source
+                    .replace("{{STORY_NAME}}", name)
+                    .replace("{{STORY_DATA}}", &story_data_xml);
 
-                    return Ok(html);
-                }
+                return Ok(html);
             }
 
             if format_changed {
