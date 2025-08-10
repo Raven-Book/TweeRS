@@ -327,7 +327,7 @@ impl ExcelParser {
                                         }
                                     } else if value.starts_with('{') && value.ends_with('}') {
                                         // Handle object format as single-item array
-                                        format!("[{}]", value)
+                                        format!("[{value}]")
                                     } else {
                                         // Treat as single-item array
                                         format!("[{}]", element_type.format_value(value))
@@ -339,7 +339,7 @@ impl ExcelParser {
                                         value.clone()
                                     } else {
                                         // Wrap non-object format in braces
-                                        format!("{{{}}}", value)
+                                        format!("{{{value}}}")
                                     }
                                 }
                                 Some(_) | None => {
