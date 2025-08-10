@@ -307,30 +307,46 @@ impl ExcelParser {
                         let formatted_value = if header.contains('#') {
                             // For array fields (field#N), skip individual rendering as they will be combined later
                             continue;
-                        } else if value.starts_with('[') && value.ends_with(']') {
-                            // Direct array format like [1,4,3] - need to reformat based on type
-                            if let Some(DataType::Array(element_type)) =
-                                type_registry.get_type_by_index(header_idx)
-                            {
-                                let inner = &value[1..value.len() - 1];
-                                if !inner.is_empty() {
-                                    let elements: Vec<String> = inner
-                                        .split(',')
-                                        .map(|item| {
-                                            let trimmed = item.trim();
-                                            element_type.format_value(trimmed)
-                                        })
-                                        .collect();
-                                    format!("[{}]", elements.join(", "))
-                                } else {
-                                    "[]".to_string()
-                                }
-                            } else {
-                                value.clone()
-                            }
                         } else {
-                            // Use type definition if available
-                            type_registry.format_value_by_index(header_idx, value)
+                            match type_registry.get_type_by_index(header_idx) {
+                                Some(DataType::Array(element_type)) => {
+                                    // Handle array type - parse value regardless of format
+                                    if value.starts_with('[') && value.ends_with(']') {
+                                        let inner = &value[1..value.len() - 1];
+                                        if !inner.is_empty() {
+                                            let elements: Vec<String> = inner
+                                                .split(',')
+                                                .map(|item| {
+                                                    let trimmed = item.trim();
+                                                    element_type.format_value(trimmed)
+                                                })
+                                                .collect();
+                                            format!("[{}]", elements.join(", "))
+                                        } else {
+                                            "[]".to_string()
+                                        }
+                                    } else if value.starts_with('{') && value.ends_with('}') {
+                                        // Handle object format as single-item array
+                                        format!("[{}]", value)
+                                    } else {
+                                        // Treat as single-item array
+                                        format!("[{}]", element_type.format_value(value))
+                                    }
+                                }
+                                Some(DataType::Object) => {
+                                    // Handle object type - should be in {key:value} format
+                                    if value.starts_with('{') && value.ends_with('}') {
+                                        value.clone()
+                                    } else {
+                                        // Wrap non-object format in braces
+                                        format!("{{{}}}", value)
+                                    }
+                                }
+                                Some(_) | None => {
+                                    // Use type definition for formatting other types
+                                    type_registry.format_value_by_index(header_idx, value)
+                                }
+                            }
                         };
 
                         field_parts.push(format!("        {header}: {formatted_value}"));
@@ -338,16 +354,25 @@ impl ExcelParser {
                 }
 
                 // Special handling for array fields - collect all field#N fields into arrays
-                let mut array_fields: HashMap<String, Vec<(usize, String)>> = HashMap::new();
-                for (field_name, field_value) in &item.fields {
-                    if let Some(hash_pos) = field_name.find('#') {
-                        let array_name = &field_name[..hash_pos];
-                        if let Ok(index) = field_name[hash_pos + 1..].parse::<usize>() {
-                            if !field_value.is_empty() {
-                                array_fields
-                                    .entry(array_name.to_string())
-                                    .or_default()
-                                    .push((index, field_value.clone()));
+                // Store (index, value, field_type) for each array field
+                let mut array_fields: HashMap<String, Vec<(usize, String, DataType)>> =
+                    HashMap::new();
+                for (header_idx, header) in table.headers.iter().enumerate() {
+                    if let Some(hash_pos) = header.find('#') {
+                        let array_name = &header[..hash_pos];
+                        if let Ok(index) = header[hash_pos + 1..].parse::<usize>() {
+                            if let Some(field_value) = item.fields.get(header) {
+                                if !field_value.is_empty() {
+                                    // Get the type for this specific indexed field
+                                    let field_type = type_registry
+                                        .get_type_by_index(header_idx)
+                                        .unwrap_or(&DataType::String)
+                                        .clone();
+                                    array_fields
+                                        .entry(array_name.to_string())
+                                        .or_default()
+                                        .push((index, field_value.clone(), field_type));
+                                }
                             }
                         }
                     }
@@ -392,13 +417,13 @@ impl ExcelParser {
                     };
 
                     // Validate array indices
-                    indexed_values.sort_by_key(|(index, _)| *index);
-                    for (index, _) in &indexed_values {
+                    indexed_values.sort_by_key(|(index, _, _)| *index);
+                    for (index, _, _) in &indexed_values {
                         let required_index = *index;
 
                         // Check if we have enough base elements or previous indexed elements
                         let mut available_positions = base_array_length;
-                        for (prev_index, _) in &indexed_values {
+                        for (prev_index, _, _) in &indexed_values {
                             if *prev_index < required_index {
                                 available_positions = available_positions.max(*prev_index);
                             }
@@ -413,21 +438,22 @@ impl ExcelParser {
                     }
 
                     // Extend array to accommodate new indices
-                    let max_index = indexed_values.iter().map(|(i, _)| *i).max().unwrap_or(0);
+                    let max_index = indexed_values.iter().map(|(i, _, _)| *i).max().unwrap_or(0);
                     while combined_values.len() < max_index {
                         // Fill gaps with empty values or extend array
                         combined_values.push("null".to_string());
                     }
 
-                    // Add indexed values
-                    for (index, value) in indexed_values {
+                    // Add indexed values using each field's own type
+                    for (index, value, field_type) in indexed_values {
                         let array_index = index - 1; // Convert to 0-based index
+                        let formatted_value = field_type.format_value(&value);
                         if array_index < combined_values.len() {
                             // Replace existing value
-                            combined_values[array_index] = array_element_type.format_value(&value);
+                            combined_values[array_index] = formatted_value;
                         } else {
                             // Extend array
-                            combined_values.push(array_element_type.format_value(&value));
+                            combined_values.push(formatted_value);
                         }
                     }
 
