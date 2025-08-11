@@ -52,7 +52,8 @@ jobs:
           args: "--locked --release"
           strip: true
 
-      - name: Build archive
+      - name: Build archive (Unix)
+        if: matrix.platform.target != 'x86_64-pc-windows-msvc'
         shell: bash
         run: |
           mkdir archive
@@ -60,21 +61,29 @@ jobs:
           if [ -f "README.md" ]; then cp README.md archive/; fi
           if [ -d "test/story-format" ]; then cp -r test/story-format archive/; fi
           cd archive
-          if [ "${{ matrix.platform.target }}" = "x86_64-pc-windows-msvc" ]; then
-            cp "../target/${{ matrix.platform.target }}/release/tweers.exe" ./
-            if [ -d "story-format" ]; then
-              zip -r "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers.exe
-            else
-              zip -r "${{ matrix.platform.archive-name }}" LICENSE README.md tweers.exe
-            fi
+          cp "../target/${{ matrix.platform.target }}/release/tweers" ./
+          if [ -d "story-format" ]; then
+            tar -czf "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers
           else
-            cp "../target/${{ matrix.platform.target }}/release/tweers" ./
-            if [ -d "story-format" ]; then
-              tar -czf "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers
-            else
-              tar -czf "${{ matrix.platform.archive-name }}" LICENSE README.md tweers
-            fi
+            tar -czf "${{ matrix.platform.archive-name }}" LICENSE README.md tweers
           fi
+
+      - name: Build archive (Windows)
+        if: matrix.platform.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "archive"
+          if (Test-Path "LICENSE") { Copy-Item "LICENSE" "archive\" }
+          if (Test-Path "README.md") { Copy-Item "README.md" "archive\" }
+          if (Test-Path "test\story-format") { Copy-Item "test\story-format" "archive\" -Recurse }
+          Copy-Item "target\${{ matrix.platform.target }}\release\tweers.exe" "archive\"
+          
+          cd archive
+          if (Test-Path "story-format") {
+            Compress-Archive -Path LICENSE, README.md, story-format, tweers.exe -DestinationPath "${{ matrix.platform.archive-name }}" -CompressionLevel Optimal
+          } else {
+            Compress-Archive -Path LICENSE, README.md, tweers.exe -DestinationPath "${{ matrix.platform.archive-name }}" -CompressionLevel Optimal
+          }
 
       - name: Upload archive
         uses: actions/upload-artifact@v4

@@ -637,10 +637,10 @@ fn extract_zip(data: &[u8], target_dir: &Path) -> Result<(), Box<dyn std::error:
         if file.name().ends_with('/') {
             std::fs::create_dir_all(outpath)?;
         } else {
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    std::fs::create_dir_all(p)?;
-                }
+            if let Some(p) = outpath.parent()
+                && !p.exists()
+            {
+                std::fs::create_dir_all(p)?;
             }
             let mut outfile = std::fs::File::create(&outpath)?;
             std::io::copy(&mut file, &mut outfile)?;
@@ -680,10 +680,10 @@ fn find_executable(dir: &Path, exe_name: &str) -> Result<PathBuf, Box<dyn std::e
 
         if path.is_file() && path.file_name().is_some_and(|n| n == exe_name) {
             return Ok(path);
-        } else if path.is_dir() {
-            if let Ok(found) = find_executable(&path, exe_name) {
-                return Ok(found);
-            }
+        } else if path.is_dir()
+            && let Ok(found) = find_executable(&path, exe_name)
+        {
+            return Ok(found);
         }
     }
 
