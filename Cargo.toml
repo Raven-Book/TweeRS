@@ -1,6 +1,6 @@
 [package]
 name = "tweers"
-version = "0.1.14-1"
+version = "0.1.15"
 edition = "2024"
 
 [dependencies]
@@ -21,3 +21,9 @@ zip = "4.3.0"
 v8 = "137.2.0"
 # Excel
 calamine = "0.30.0"
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+# Archive extraction for update command (Unix only)
+[target.'cfg(unix)'.dependencies]
+tar = "0.4"
+flate2 = "1.0"

@@ -35,7 +35,7 @@ jobs:
           - os-name: Windows-x86_64
             runs-on: windows-latest
             target: x86_64-pc-windows-msvc
-            archive-name: tweers-windows-x86_64.7z
+            archive-name: tweers-windows-x86_64.zip
 
       fail-fast: false
 
@@ -63,9 +63,9 @@ jobs:
           if [ "${{ matrix.platform.target }}" = "x86_64-pc-windows-msvc" ]; then
             cp "../target/${{ matrix.platform.target }}/release/tweers.exe" ./
             if [ -d "story-format" ]; then
-              7z a "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers.exe
+              zip -r "${{ matrix.platform.archive-name }}" LICENSE README.md story-format tweers.exe
             else
-              7z a "${{ matrix.platform.archive-name }}" LICENSE README.md tweers.exe
+              zip -r "${{ matrix.platform.archive-name }}" LICENSE README.md tweers.exe
             fi
           else
             cp "../target/${{ matrix.platform.target }}/release/tweers" ./
@@ -109,6 +109,6 @@ jobs:
             ./artifacts/tweers-linux-x86_64.tar.gz/tweers-linux-x86_64.tar.gz
             ./artifacts/tweers-macos-x86_64.tar.gz/tweers-macos-x86_64.tar.gz
             ./artifacts/tweers-macos-arm64.tar.gz/tweers-macos-arm64.tar.gz
-            ./artifacts/tweers-windows-x86_64.7z/tweers-windows-x86_64.7z
+            ./artifacts/tweers-windows-x86_64.zip/tweers-windows-x86_64.zip
           draft: false
           prerelease: false
