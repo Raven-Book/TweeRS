@@ -49,6 +49,10 @@ impl DataType {
 
     /// Format a value according to its type for JavaScript output
     pub fn format_value(&self, value: &str) -> String {
+        if value.trim().is_empty() || value.trim().to_lowercase() == "null" {
+            return "null".to_string();
+        }
+
         match self {
             DataType::Int | DataType::Float | DataType::Number => {
                 // Try to parse as number, fallback to string if invalid
