@@ -80,7 +80,7 @@ impl DataType {
                     if inner.is_empty() {
                         return "[]".to_string();
                     }
-                    
+
                     let elements: Vec<String> = inner
                         .split(',')
                         .map(|item| {
