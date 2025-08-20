@@ -174,14 +174,15 @@ impl ArrayHandler {
     ) -> ExcelResult<Vec<String>> {
         let mut combined_values = Vec::new();
 
-        if let Some(base_value) = item.fields.get(array_name) {
-            if base_value.starts_with('[') && base_value.ends_with(']') {
-                let inner = &base_value[1..base_value.len() - 1];
-                if !inner.is_empty() {
-                    for item in inner.split(',') {
-                        let trimmed = item.trim();
-                        combined_values.push(element_type.format_value(trimmed));
-                    }
+        if let Some(base_value) = item.fields.get(array_name)
+            && base_value.starts_with('[')
+            && base_value.ends_with(']')
+        {
+            let inner = &base_value[1..base_value.len() - 1];
+            if !inner.is_empty() {
+                for item in inner.split(',') {
+                    let trimmed = item.trim();
+                    combined_values.push(element_type.format_value(trimmed));
                 }
             }
         }
