@@ -25,7 +25,7 @@ pub enum ProcessingError {
     ConfigError { message: String },
 }
 
-// Legacy alias for backwards compatibility
+/// Legacy alias for backwards compatibility
 pub type PipelineError = ProcessingError;
 
 impl ProcessingError {

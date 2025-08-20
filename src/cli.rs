@@ -143,12 +143,9 @@ impl BuildContext {
         let modified = metadata.modified()?;
 
         if let Some(cached) = self.file_cache.get(path) {
-            // If base64 is enabled and this is a media file, check if it was previously
-            // processed as a media file (has media-related tags)
             if self.base64
                 && let Some(media_type) = get_media_passage_type(path)
             {
-                // Check if any cached passage for this file has the expected media tag
                 let has_media_passage = cached
                     .passages
                     .values()
@@ -245,10 +242,8 @@ async fn build_once(
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting pipeline-based build process...");
 
-    // Create script manager for default scripts directory
     let script_manager = ScriptManager::default();
 
-    // Create the build pipeline
     let mut pipeline = Pipeline::new("TweersBuildPipeline")
         .with_external_inputs(vec![
             "sources".to_string(),
@@ -262,23 +257,18 @@ async fn build_once(
         .add_node(Box::new(FileParserNode))?
         .add_node(Box::new(DataAggregatorNode))?;
 
-    // Add data processor node if there are data scripts (before HTML generation)
     if script_manager.has_data_scripts() {
         pipeline = pipeline.add_node(Box::new(DataProcessorNode::new(script_manager.clone())?))?;
     }
 
-    // Continue with HTML generation
     pipeline = pipeline.add_node(Box::new(HtmlGeneratorNode))?;
 
-    // Add HTML processor node if there are HTML scripts
     if script_manager.has_html_scripts() {
         pipeline = pipeline.add_node(Box::new(HtmlProcessorNode::new(script_manager.clone())?))?;
     }
 
-    // Add file writer node
     pipeline = pipeline.add_node(Box::new(FileWriterNode))?;
 
-    // Prepare initial data
     let mut pipe_data = PipeMap::new();
     pipe_data.insert("sources", sources.to_vec());
     pipe_data.insert("base64", context.base64);
@@ -286,10 +276,8 @@ async fn build_once(
     pipe_data.insert("output_path", dist.to_path_buf());
     pipe_data.insert("is_rebuild", is_rebuild);
 
-    // Execute the pipeline
     let result = pipeline.execute(pipe_data).await?;
 
-    // Update context from pipeline result
     if let Some(updated_context) = result.get::<BuildContext>("context") {
         *context = updated_context.clone();
     }
@@ -353,7 +341,6 @@ async fn watch_and_rebuild(
                         .collect();
 
                     if !relevant_paths.is_empty() {
-                        // Add paths to pending changes
                         for path in relevant_paths {
                             pending_changes.insert(path);
                         }
@@ -366,7 +353,6 @@ async fn watch_and_rebuild(
                 warn!("Watch error: {}", e);
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
-                // Check if we have pending changes and enough time has passed
                 if !pending_changes.is_empty()
                     && last_event_time.elapsed() >= Duration::from_millis(200)
                 {
@@ -403,18 +389,14 @@ pub async fn pack_command(
     debug!("Assets directories: {:?}", assets_dirs);
     debug!("Output archive: {:?}", output_path);
 
-    // Create build context
     let mut context = BuildContext::with_assets(is_debug, true, assets_dirs.clone());
 
-    // Create temporary directory for HTML file
     let temp_dir = std::env::temp_dir().join(format!("tweers_pack_{}", std::process::id()));
     std::fs::create_dir_all(&temp_dir)?;
 
-    // First, run the build process to get story data
     let temp_html = temp_dir.join("temp_index.html");
     build_once(&sources, &temp_html, &mut context, false).await?;
 
-    // Get story title from cache for naming
     let (all_passages, _) = context.get_all_cached_data();
     let story_title = all_passages
         .get("StoryTitle")
@@ -422,14 +404,12 @@ pub async fn pack_command(
         .filter(|title| !title.is_empty())
         .unwrap_or_else(|| "story".to_string());
 
-    // Use story title for archive name if output_path is default
     let actual_output_path = if output_path == PathBuf::from("package.zip") {
         PathBuf::from(format!("{story_title}.zip"))
     } else {
         output_path
     };
 
-    // Then, create pack pipeline with asset processing
     pack_once(
         &sources,
         &assets_dirs,
@@ -440,7 +420,6 @@ pub async fn pack_command(
     )
     .await?;
 
-    // Clean up temporary directory
     if temp_dir.exists() {
         std::fs::remove_dir_all(&temp_dir)?;
     }
@@ -459,7 +438,6 @@ async fn pack_once(
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Starting pipeline-based pack process...");
 
-    // Create the pack pipeline
     let pipeline = Pipeline::new("TweersPackPipeline")
         .with_external_inputs(vec![
             "sources".to_string(),
@@ -471,7 +449,6 @@ async fn pack_once(
         .add_node(Box::new(AssetCompressorNode))?
         .add_node(Box::new(ArchiveCreatorNode))?;
 
-    // Prepare initial data
     let mut pipe_data = PipeMap::new();
     pipe_data.insert("sources", sources.to_vec());
     pipe_data.insert("assets_dirs", assets_dirs.to_vec());
@@ -480,7 +457,6 @@ async fn pack_once(
     pipe_data.insert("fast_compression", fast_compression);
     pipe_data.insert("context", context.clone());
 
-    // Execute the pipeline
     let _result = pipeline.execute(pipe_data).await?;
 
     info!("Pack pipeline completed successfully");
@@ -514,7 +490,6 @@ pub async fn update_command(
 
     let client = reqwest::Client::new();
 
-    // Get latest release info
     let response = client
         .get(&repo_api_url)
         .header("User-Agent", "TweeRS-Updater")
@@ -576,7 +551,6 @@ pub async fn update_command(
     let temp_dir = std::env::temp_dir().join(format!("tweers_update_{}", std::process::id()));
     std::fs::create_dir_all(&temp_dir)?;
 
-    // Extract archive
     if asset.name.ends_with(".zip") {
         extract_zip(&archive_data, &temp_dir)?;
     } else if asset.name.ends_with(".tar.gz") {
@@ -585,7 +559,6 @@ pub async fn update_command(
         return Err("Unsupported archive format".into());
     }
 
-    // Find the tweers executable in extracted files
     let new_exe_name = if cfg!(target_os = "windows") {
         "tweers.exe"
     } else {
@@ -594,17 +567,14 @@ pub async fn update_command(
 
     let extracted_exe = find_executable(&temp_dir, new_exe_name)?;
 
-    // Backup current executable
     let backup_path = current_exe.with_extension("old");
     if backup_path.exists() {
         std::fs::remove_file(&backup_path)?;
     }
     std::fs::rename(&current_exe, &backup_path)?;
 
-    // Replace with new executable
     std::fs::copy(&extracted_exe, &current_exe)?;
 
-    // Set executable permissions on Unix
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

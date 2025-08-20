@@ -10,11 +10,9 @@ pub struct ScriptEngine {
 
 impl ScriptEngine {
     fn setup_console(scope: &mut v8::HandleScope, global: &v8::Object) {
-        // Create console object
         let console_key = v8::String::new(scope, "console").unwrap();
         let console_obj = v8::Object::new(scope);
 
-        // Create console.log function
         let log_key = v8::String::new(scope, "log").unwrap();
         let log_fn = v8::Function::new(
             scope,
@@ -43,7 +41,6 @@ impl ScriptEngine {
     }
 
     pub fn new() -> JSResult<Self> {
-        // Initialize V8 (execute only once)
         V8_INIT.call_once(|| {
             let platform = v8::new_default_platform(0, false).make_shared();
             v8::V8::initialize_platform(platform);
@@ -65,7 +62,6 @@ impl ScriptEngine {
         let context = v8::Context::new(scope, v8::ContextOptions::default());
         let scope = &mut v8::ContextScope::new(scope, context);
 
-        // Set input data (passages)
         let input_key = v8::String::new(scope, "input").unwrap();
         let input_value = v8::String::new(scope, data_json).unwrap();
         let input_obj = v8::json::parse(scope, input_value)
@@ -74,17 +70,14 @@ impl ScriptEngine {
         let global = context.global(scope);
         global.set(scope, input_key.into(), input_obj);
 
-        // Set format variable
         let format_key = v8::String::new(scope, "format").unwrap();
         let format_value = v8::String::new(scope, format_json).unwrap();
         let format_obj = v8::json::parse(scope, format_value)
             .ok_or_else(|| ScriptError::InvalidOutput("Failed to parse format JSON".to_string()))?;
         global.set(scope, format_key.into(), format_obj);
 
-        // Add console.log support
         Self::setup_console(scope, &global);
 
-        // Wrap script in a function to allow return statements
         let wrapped_script = format!("(function() {{ {script} }})()");
         let code = v8::String::new(scope, &wrapped_script).unwrap();
         let script_obj = v8::Script::compile(scope, code, None)
@@ -93,8 +86,6 @@ impl ScriptEngine {
         let result = script_obj
             .run(scope)
             .ok_or_else(|| ScriptError::ExecutionError("Script execution failed".to_string()))?;
-
-        // Convert result to JSON string
         let result_json = v8::json::stringify(scope, result)
             .ok_or_else(|| ScriptError::InvalidOutput("Failed to stringify result".to_string()))?;
 
@@ -112,16 +103,12 @@ impl ScriptEngine {
         let context = v8::Context::new(scope, v8::ContextOptions::default());
         let scope = &mut v8::ContextScope::new(scope, context);
 
-        // Add console.log support
         let global = context.global(scope);
         Self::setup_console(scope, &global);
-
-        // Set input variable (HTML content)
         let input_key = v8::String::new(scope, "input").unwrap();
         let input_value = v8::String::new(scope, html).unwrap();
         global.set(scope, input_key.into(), input_value.into());
 
-        // Set passages variable
         let passages_key = v8::String::new(scope, "passages").unwrap();
         let passages_value = v8::String::new(scope, passages_json).unwrap();
         let passages_obj = v8::json::parse(scope, passages_value).ok_or_else(|| {
@@ -129,14 +116,12 @@ impl ScriptEngine {
         })?;
         global.set(scope, passages_key.into(), passages_obj);
 
-        // Set format variable
         let format_key = v8::String::new(scope, "format").unwrap();
         let format_value = v8::String::new(scope, format_json).unwrap();
         let format_obj = v8::json::parse(scope, format_value)
             .ok_or_else(|| ScriptError::InvalidOutput("Failed to parse format JSON".to_string()))?;
         global.set(scope, format_key.into(), format_obj);
 
-        // Wrap script in a function to allow return statements
         let wrapped_script = format!("(function() {{ {script} }})()");
         let code = v8::String::new(scope, &wrapped_script).unwrap();
         let script_obj = v8::Script::compile(scope, code, None)
@@ -145,8 +130,6 @@ impl ScriptEngine {
         let result = script_obj
             .run(scope)
             .ok_or_else(|| ScriptError::ExecutionError("Script execution failed".to_string()))?;
-
-        // Get string result
         if result.is_string() {
             Ok(result.to_string(scope).unwrap().to_rust_string_lossy(scope))
         } else {
@@ -163,10 +146,8 @@ impl Default for ScriptEngine {
     }
 }
 
-// Ensure V8 cleanup on program exit
 impl Drop for ScriptEngine {
     fn drop(&mut self) {
-        // V8 isolate will clean up automatically
         debug!("ScriptEngine dropped");
     }
 }

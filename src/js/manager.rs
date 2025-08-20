@@ -53,7 +53,6 @@ impl ScriptManager {
             return Ok(());
         }
 
-        // Scan data subdirectory
         let data_dir = self.scripts_dir.join("data");
         if data_dir.exists() && data_dir.is_dir() {
             for entry in std::fs::read_dir(&data_dir)? {
@@ -67,7 +66,6 @@ impl ScriptManager {
             }
         }
 
-        // Scan html subdirectory
         let html_dir = self.scripts_dir.join("html");
         if html_dir.exists() && html_dir.is_dir() {
             for entry in std::fs::read_dir(&html_dir)? {
@@ -81,7 +79,6 @@ impl ScriptManager {
             }
         }
 
-        // Sort by filename to ensure execution order
         self.data_scripts.sort();
         self.html_scripts.sort();
 

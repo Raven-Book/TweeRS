@@ -41,7 +41,6 @@ impl PipeNode for AssetCompressorNode {
             return Ok(data);
         }
 
-        // Check ffmpeg availability
         let ffmpeg_available = match check_ffmpeg_availability() {
             Ok(available) => {
                 if !available {
@@ -69,7 +68,6 @@ impl PipeNode for AssetCompressorNode {
 
             debug!("Processing assets directory: {:?}", assets_dir);
 
-            // Collect all files in the assets directory with relative paths
             let files = collect_asset_files_with_relative_paths(assets_dir)?;
 
             for (file_path, relative_path) in files {
@@ -86,7 +84,7 @@ impl PipeNode for AssetCompressorNode {
                         }
                         Err(e) => {
                             warn!("Failed to compress {}: {}", file_path.display(), e);
-                            // Fall back to original file
+
                             asset_file_map.push((file_path, relative_path));
                         }
                     }
@@ -145,7 +143,6 @@ impl PipeNode for ArchiveCreatorNode {
 
         debug!("Creating archive at: {:?}", output_path);
 
-        // Create the archive
         let file = std::fs::File::create(output_path)
             .map_err(|e| format!("Failed to create archive file: {e}"))?;
 
@@ -154,12 +151,10 @@ impl PipeNode for ArchiveCreatorNode {
             .compression_method(CompressionMethod::Deflated)
             .unix_permissions(0o755);
 
-        // Add the generated HTML file
         if html_output_path.exists() {
             let html_content = std::fs::read(html_output_path)
                 .map_err(|e| format!("Failed to read HTML file: {e}"))?;
 
-            // Try to get story title for HTML filename in archive, fallback to "index.html"
             let html_name = if let Some(context) = data.get::<crate::cli::BuildContext>("context") {
                 let (all_passages, _) = context.get_all_cached_data();
                 all_passages
@@ -179,7 +174,6 @@ impl PipeNode for ArchiveCreatorNode {
             debug!("Added HTML file to archive: {}", html_name);
         }
 
-        // Add asset files with proper directory structure
         for (file_path, archive_path) in asset_file_map {
             if !file_path.exists() {
                 warn!("Asset file does not exist: {:?}", file_path);
@@ -230,12 +224,10 @@ fn collect_asset_files_with_relative_paths(
             if path.is_dir() {
                 visit_dir(&path, base_dir, files)?;
             } else if path.is_file() {
-                // Calculate relative path from base_dir
                 let relative_path = path
                     .strip_prefix(base_dir)
                     .map_err(|_| format!("Failed to get relative path for {}", path.display()))?;
 
-                // Convert to forward slashes for zip archives and include base dir name
                 let base_name = base_dir
                     .file_name()
                     .and_then(|n| n.to_str())
@@ -302,12 +294,10 @@ async fn compress_media_file(
         .unwrap_or("")
         .to_lowercase();
 
-    // Create temporary directory for compressed file
     let temp_dir = std::env::temp_dir().join(format!("tweers_compress_{}", std::process::id()));
     std::fs::create_dir_all(&temp_dir)
         .map_err(|e| format!("Failed to create temp directory: {e}"))?;
 
-    // Compress videos
     if matches!(
         extension.as_str(),
         "mp4" | "avi" | "mov" | "mkv" | "webm" | "ogv"
@@ -321,11 +311,10 @@ async fn compress_media_file(
         );
         let compressed_path = temp_dir.join(&compressed_name);
 
-        // Configure compression settings based on fast_compression flag
         let (crf, preset, audio_bitrate) = if fast_compression {
-            ("30", "ultrafast", "96k") // Lower quality, much faster
+            ("30", "ultrafast", "96k")
         } else {
-            ("23", "medium", "128k") // Better quality, good balance
+            ("23", "medium", "128k")
         };
 
         info!(
@@ -338,7 +327,6 @@ async fn compress_media_file(
             }
         );
 
-        // Run ffmpeg with progress output
         let mut child = Command::new("ffmpeg")
             .args([
                 "-i",
@@ -365,10 +353,8 @@ async fn compress_media_file(
             .spawn()
             .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
 
-        // Get video duration first
         let duration = get_video_duration(file_path)?;
 
-        // Read progress from stdout
         if let Some(stdout) = child.stdout.take() {
             let reader = BufReader::new(stdout);
             for line in reader.lines().map_while(Result::ok) {
@@ -382,7 +368,6 @@ async fn compress_media_file(
                         0.0
                     };
 
-                    // Create progress bar
                     let bar_width = 30;
                     let filled = (progress / 100.0 * bar_width as f64) as usize;
                     let bar = "█".repeat(filled) + &"░".repeat(bar_width - filled);
@@ -404,16 +389,14 @@ async fn compress_media_file(
             .wait()
             .map_err(|e| format!("Failed to wait for ffmpeg: {e}"))?;
 
-        println!(); // New line after progress
+        println!();
 
         if result.success() {
             return check_and_return_compressed(file_path, &compressed_path, archive_path);
         } else {
             warn!("Video compression failed for {}", file_path.display());
         }
-    }
-    // Compress images
-    else if matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "bmp" | "tiff") {
+    } else if matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "bmp" | "tiff") {
         let compressed_name = if extension == "png" {
             format!(
                 "compressed_{}.png",
@@ -437,7 +420,7 @@ async fn compress_media_file(
 
         let result = if extension == "png" {
             let compression_level = if fast_compression { "6" } else { "9" };
-            // Use ffmpeg for PNG compression
+
             Command::new("ffmpeg")
                 .args([
                     "-i",
@@ -449,8 +432,8 @@ async fn compress_media_file(
                 ])
                 .output()
         } else {
-            let quality = if fast_compression { "65" } else { "80" }; // Better quality for images
-            // Use ffmpeg for JPEG compression
+            let quality = if fast_compression { "65" } else { "80" };
+
             Command::new("ffmpeg")
                 .args([
                     "-i",
@@ -476,7 +459,6 @@ async fn compress_media_file(
         }
     }
 
-    // For other files or failed compression, return original
     Ok((file_path.to_path_buf(), archive_path.to_string()))
 }
 
@@ -535,7 +517,6 @@ fn get_video_duration(file_path: &Path) -> Result<u64, String> {
             .map_err(|_| "Failed to parse duration".to_string())?;
         Ok(duration_f64 as u64)
     } else {
-        // Fallback: return 0 to disable progress percentage
         Ok(0)
     }
 }
@@ -544,14 +525,12 @@ fn get_video_duration(file_path: &Path) -> Result<u64, String> {
 fn check_ffmpeg_availability() -> Result<bool, String> {
     use std::process::Command;
 
-    // Check ffmpeg
     let ffmpeg_check = Command::new("ffmpeg").args(["-version"]).output();
 
     if ffmpeg_check.is_err() {
         return Ok(false);
     }
 
-    // Check ffprobe
     let ffprobe_check = Command::new("ffprobe").args(["-version"]).output();
 
     if ffprobe_check.is_err() {

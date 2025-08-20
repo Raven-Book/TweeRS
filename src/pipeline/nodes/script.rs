@@ -54,7 +54,6 @@ impl PipeNode for DataProcessorNode {
             .get::<BuildContext>("context")
             .ok_or("Missing context input")?;
 
-        // If there are no data processing scripts, return original data directly
         if !self.script_manager.has_data_scripts() {
             debug!("No data processing scripts found, skipping data processing");
             return Ok(data);
@@ -63,22 +62,17 @@ impl PipeNode for DataProcessorNode {
         let mut current_passages = passages.clone();
         let current_story_data = story_data.clone();
 
-        // Execute all data processing scripts in sequence
         for script_path in self.script_manager.get_data_scripts() {
             debug!("Executing data script: {:?}", script_path);
 
-            // Debug: Check if story data has name field
             if let Some(ref story_data) = current_story_data {
                 debug!("Story data name before script: {:?}", story_data.name);
             }
 
-            // Prepare script input data (just passages)
             let input_data = json!(current_passages);
 
-            // Read and execute script
             match tokio::fs::read_to_string(script_path).await {
                 Ok(script_content) => {
-                    // Since V8 is not Send, we need to execute on the current thread
                     let mut engine = ScriptEngine::new()?;
                     let format_info = if let Some(ref story_data) = current_story_data {
                         json!({
@@ -96,43 +90,33 @@ impl PipeNode for DataProcessorNode {
                         &format_info.to_string(),
                         &script_content,
                     ) {
-                        Ok(result) => {
-                            // debug!("Script result: {}", result);
-                            // Deserialize modified data
-                            match serde_json::from_str::<serde_json::Value>(&result) {
-                                Ok(processed_data) => {
-                                    // The result should be the new passages data
-                                    if let Ok(new_passages) = serde_json::from_value(processed_data)
-                                    {
-                                        current_passages = new_passages;
+                        Ok(result) => match serde_json::from_str::<serde_json::Value>(&result) {
+                            Ok(processed_data) => {
+                                if let Ok(new_passages) = serde_json::from_value(processed_data) {
+                                    current_passages = new_passages;
 
-                                        // Debug: Check if story data has name field after script
-                                        if let Some(ref story_data) = current_story_data {
-                                            debug!(
-                                                "Story data name after script: {:?}",
-                                                story_data.name
-                                            );
-                                        }
-
+                                    if let Some(ref story_data) = current_story_data {
                                         debug!(
-                                            "Data script executed successfully: {:?}",
-                                            script_path
-                                        );
-                                    } else {
-                                        warn!(
-                                            "Data script returned invalid data structure, skipping: {:?}",
-                                            script_path
+                                            "Story data name after script: {:?}",
+                                            story_data.name
                                         );
                                     }
-                                }
-                                Err(e) => {
+
+                                    debug!("Data script executed successfully: {:?}", script_path);
+                                } else {
                                     warn!(
-                                        "Failed to parse script result, skipping: {:?} - {}",
-                                        script_path, e
+                                        "Data script returned invalid data structure, skipping: {:?}",
+                                        script_path
                                     );
                                 }
                             }
-                        }
+                            Err(e) => {
+                                warn!(
+                                    "Failed to parse script result, skipping: {:?} - {}",
+                                    script_path, e
+                                );
+                            }
+                        },
                         Err(e) => {
                             warn!(
                                 "Data script execution failed, skipping: {:?} - {}",
@@ -201,7 +185,6 @@ impl PipeNode for HtmlProcessorNode {
             .get::<BuildContext>("context")
             .ok_or("Missing context input")?;
 
-        // If there are no HTML processing scripts, return original HTML directly
         if !self.script_manager.has_html_scripts() {
             debug!("No HTML processing scripts found, skipping HTML processing");
             return Ok(data);
@@ -209,16 +192,11 @@ impl PipeNode for HtmlProcessorNode {
 
         let mut current_html = html_content.clone();
 
-        // Execute all HTML processing scripts in sequence
         for script_path in self.script_manager.get_html_scripts() {
             debug!("Executing HTML script: {:?}", script_path);
 
-            // No need for script input preparation, variables are set directly in engine
-
-            // Read and execute script
             match tokio::fs::read_to_string(script_path).await {
                 Ok(script_content) => {
-                    // Since V8 is not Send, we need to execute on the current thread
                     let mut engine = ScriptEngine::new()?;
                     let passages_json = serde_json::to_string(&passages)?;
                     let format_info = json!({

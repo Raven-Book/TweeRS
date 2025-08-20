@@ -30,7 +30,6 @@ pub enum JSError {
     V8InitError(String),
 }
 
-// Legacy alias for backwards compatibility
 pub type ScriptError = JSError;
 
 impl JSError {
@@ -68,5 +67,4 @@ impl JSError {
 /// Result type alias for JavaScript operations
 pub type JSResult<T> = Result<T, JSError>;
 
-// Legacy alias for backwards compatibility
 pub type ScriptResult<T> = JSResult<T>;

@@ -201,7 +201,6 @@ impl FileParserNode {
 
                     let passage_name = file_path.to_string_lossy().to_string();
 
-                    // Parse Excel file and generate JavaScript passages
                     match ExcelParser::parse_file(file_path).await {
                         Ok(js_code) => {
                             if !js_code.is_empty() {
@@ -228,7 +227,6 @@ impl FileParserNode {
                     Ok((passages, None))
                 }
                 _ => {
-                    // Check for media files with base64 support
                     if context.base64
                         && let Some(media_type) = get_media_passage_type(file_path)
                     {
@@ -249,7 +247,6 @@ impl FileParserNode {
                         passages.insert(passage_name, passage);
                         return Ok((passages, None));
                     }
-                    // Parse as Twee file
                     let content = tokio::fs::read_to_string(file_path).await?;
                     TweeParser::parse(&content).map_err(|e| {
                         format!("Failed to parse {}: {}", file_path.display(), e).into()
@@ -257,7 +254,6 @@ impl FileParserNode {
                 }
             }
         } else {
-            // No extension, parse as Twee file
             let content = tokio::fs::read_to_string(file_path).await?;
             TweeParser::parse(&content)
                 .map_err(|e| format!("Failed to parse {}: {}", file_path.display(), e).into())
@@ -305,7 +301,6 @@ impl PipeNode for DataAggregatorNode {
         let mut all_passages = IndexMap::new();
         let mut story_data = None;
 
-        // Build all_passages in correct file order
         for file_path in files {
             if let Some(file_info) = context.file_cache.get(file_path) {
                 for (name, passage) in &file_info.passages {
@@ -324,7 +319,6 @@ impl PipeNode for DataAggregatorNode {
             }
         }
 
-        // Extract StoryTitle and set it on StoryData
         if let Some(ref mut data) = story_data {
             if let Some(title_passage) = all_passages.get("StoryTitle") {
                 data.name = Some(title_passage.content.clone());
@@ -342,7 +336,6 @@ impl PipeNode for DataAggregatorNode {
                 data.start = Some(start_passage.clone());
             }
 
-            // Validate StoryData
             data.validate()
                 .map_err(|e| format!("StoryData validation failed: {e}"))?;
         }

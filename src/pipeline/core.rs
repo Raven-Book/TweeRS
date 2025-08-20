@@ -43,7 +43,6 @@ pub trait PipeNode: Send + Sync {
         data: &PipeMap,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         for output in self.output() {
-            // Output does not support optional syntax, all outputs are required
             if !data.contains_key(&output) {
                 return Err(Box::new(PipelineError::MissingOutput {
                     node: self.name(),
@@ -78,7 +77,6 @@ impl Pipeline {
 
     pub fn add_node(mut self, node: Box<dyn PipeNode>) -> Result<Self, PipelineError> {
         if self.nodes.is_empty() {
-            // First node: inputs will be provided externally via initial PipeMap
             debug!(
                 "Adding first node '{}' to pipeline '{}'. Inputs: {:?} (will be provided externally)",
                 node.name(),
@@ -90,12 +88,10 @@ impl Pipeline {
             let mut missing_inputs = Vec::new();
             let mut available_sources = Vec::new();
 
-            // Collect outputs from previous nodes
             for existing_node in &self.nodes {
                 available_sources.extend(existing_node.output());
             }
 
-            // Add external inputs as available sources
             available_sources.extend(self.external_inputs.clone());
 
             for input in &current_inputs {

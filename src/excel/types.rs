@@ -27,7 +27,6 @@ impl DataType {
             "bool" | "boolean" => DataType::Bool,
             "object" | "obj" => DataType::Object,
             _ => {
-                // Handle array types like "array<int>", "array<string>"
                 if trimmed.starts_with("array<") && trimmed.ends_with(">") {
                     let inner_type = &trimmed[6..trimmed.len() - 1];
                     let element_type = DataType::parse(inner_type);
@@ -43,7 +42,7 @@ impl DataType {
     pub fn get_array_element_type(&self) -> DataType {
         match self {
             DataType::Array(element_type) => *element_type.clone(),
-            _ => DataType::String, // Default to string for non-array types
+            _ => DataType::String,
         }
     }
 
@@ -55,23 +54,18 @@ impl DataType {
 
         match self {
             DataType::Int | DataType::Float | DataType::Number => {
-                // Try to parse as number, fallback to string if invalid
                 if value.parse::<f64>().is_ok() {
                     value.to_string()
                 } else {
                     format!("\"{}\"", value.replace('"', "\\\""))
                 }
             }
-            DataType::Bool | DataType::Boolean => {
-                // Handle various boolean representations
-                match value.to_lowercase().as_str() {
-                    "true" | "1" | "yes" | "on" => "true".to_string(),
-                    "false" | "0" | "no" | "off" => "false".to_string(),
-                    _ => format!("\"{}\"", value.replace('"', "\\\"")),
-                }
-            }
+            DataType::Bool | DataType::Boolean => match value.to_lowercase().as_str() {
+                "true" | "1" | "yes" | "on" => "true".to_string(),
+                "false" | "0" | "no" | "off" => "false".to_string(),
+                _ => format!("\"{}\"", value.replace('"', "\\\"")),
+            },
             DataType::Object => {
-                // For objects, try to preserve existing format or wrap in quotes
                 if (value.starts_with('{') && value.ends_with('}'))
                     || (value.starts_with('[') && value.ends_with(']'))
                 {
@@ -80,15 +74,35 @@ impl DataType {
                     format!("\"{}\"", value.replace('"', "\\\""))
                 }
             }
-            DataType::Array(_) => {
-                // Arrays should be handled separately, but if called directly, treat as string
-                format!("\"{}\"", value.replace('"', "\\\""))
+            DataType::Array(element_type) => {
+                if value.starts_with('[') && value.ends_with(']') {
+                    let inner = &value[1..value.len() - 1];
+                    if inner.is_empty() {
+                        return "[]".to_string();
+                    }
+                    
+                    let elements: Vec<String> = inner
+                        .split(',')
+                        .map(|item| {
+                            let trimmed = item.trim();
+                            // Remove surrounding quotes if present before formatting
+                            let unquoted = if trimmed.starts_with('"') && trimmed.ends_with('"') {
+                                &trimmed[1..trimmed.len() - 1]
+                            } else {
+                                trimmed
+                            };
+                            element_type.format_value(unquoted)
+                        })
+                        .collect();
+                    format!("[{}]", elements.join(","))
+                } else {
+                    format!("[{}]", element_type.format_value(value))
+                }
             }
             DataType::String => {
                 format!("\"{}\"", value.replace('"', "\\\""))
             }
             DataType::Unknown(_) => {
-                // Default to string for unknown types
                 format!("\"{}\"", value.replace('"', "\\\""))
             }
         }
@@ -147,7 +161,6 @@ impl TypeRegistry {
         if let Some(data_type) = self.get_type_for_header(header) {
             data_type.format_value(value)
         } else {
-            // Default to string formatting
             format!("\"{}\"", value.replace('"', "\\\""))
         }
     }
@@ -157,7 +170,6 @@ impl TypeRegistry {
         if let Some(data_type) = self.get_type_by_index(index) {
             data_type.format_value(value)
         } else {
-            // Default to string formatting
             format!("\"{}\"", value.replace('"', "\\\""))
         }
     }

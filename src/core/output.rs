@@ -2,7 +2,6 @@ use crate::core::story::{Passage, StoryData, StoryFormat};
 use indexmap::IndexMap;
 use tracing::debug;
 
-// Struct to reduce function parameters
 struct StoryInfo<'a> {
     name: &'a str,
     ifid: &'a str,

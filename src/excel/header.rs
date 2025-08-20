@@ -2,7 +2,7 @@ use crate::error::{ExcelParseError, ExcelResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// Header parsing system
+/// Header parsing system
 #[derive(Debug, Clone)]
 pub struct RawHeaderData {
     pub rows: Vec<Vec<String>>,
@@ -10,7 +10,7 @@ pub struct RawHeaderData {
     pub end_row: usize,
 }
 
-// Trait for header parsers
+/// Trait for header parsers
 pub trait HeaderParser: Send + Sync {
     fn required_headers(&self) -> Vec<&'static str>;
     fn parse_complete_table(
@@ -21,13 +21,13 @@ pub trait HeaderParser: Send + Sync {
     fn parser_name(&self) -> &'static str;
 }
 
-// Trait for parsed table results
+/// Trait for parsed table results
 pub trait TableResult: Send + Sync {
     fn as_any(&self) -> &dyn std::any::Any;
     fn table_type(&self) -> &str;
 }
 
-// Registry for header parsers
+/// Registry for header parsers
 pub struct HeaderRegistry {
     parsers: Vec<Box<dyn HeaderParser>>,
 }
@@ -95,7 +95,7 @@ pub struct ObjectTableItem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ObjectTable {
     pub save_var: String,
-    pub table_type: String, // "obj", "item", etc.
+    pub table_type: String,
     pub headers: Vec<String>,
     pub type_defs: Vec<String>,
     pub items: Vec<ObjectTableItem>,
@@ -135,7 +135,7 @@ impl TableResult for ParameterTable {
     }
 }
 
-// Object table header parser implementation
+/// Object table header parser implementation
 pub struct ObjectTableHeaderParser;
 
 impl HeaderParser for ObjectTableHeaderParser {
@@ -169,8 +169,7 @@ impl HeaderParser for ObjectTableHeaderParser {
                     ));
                 }
             } else if first_cell.starts_with("#obj") {
-                // This is the table type row
-                table_type = first_cell[1..].to_string(); // Remove the '#'
+                table_type = first_cell[1..].to_string();
                 headers = row.iter().skip(1).cloned().collect();
             } else if first_cell.starts_with("#type") {
                 type_defs = row.iter().skip(1).cloned().collect();
@@ -187,7 +186,6 @@ impl HeaderParser for ObjectTableHeaderParser {
             return Err(ExcelParseError::missing_header("column headers"));
         }
 
-        // Parse data rows
         let mut items = Vec::new();
         for row in data_rows {
             if let Some(item) = Self::parse_object_data_row(row, &headers)? {
@@ -238,7 +236,7 @@ impl ObjectTableHeaderParser {
     }
 }
 
-// Parameter table header parser implementation
+/// Parameter table header parser implementation
 pub struct ParameterTableHeaderParser;
 
 impl HeaderParser for ParameterTableHeaderParser {
@@ -281,7 +279,6 @@ impl HeaderParser for ParameterTableHeaderParser {
             return Err(ExcelParseError::MissingHeader("var headers".to_string()));
         }
 
-        // Validate required headers for parameter table
         let required = ["name", "type", "value"];
         for req in &required {
             if !headers.contains(&req.to_string()) {
@@ -289,7 +286,6 @@ impl HeaderParser for ParameterTableHeaderParser {
             }
         }
 
-        // Parse data rows
         let mut parameters = Vec::new();
         for row in data_rows {
             if let Some(param) = Self::parse_parameter_data_row(row, &headers)? {

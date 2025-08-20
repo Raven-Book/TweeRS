@@ -9,11 +9,10 @@ struct PassageMetadata {
     size: String,
 }
 
-// Type aliases to reduce complexity
 type PassageHeader = (String, Option<String>, Option<String>, Option<String>);
 type ParseResult = Result<(IndexMap<String, Passage>, Option<StoryData>), String>;
 
-// Struct to reduce function parameters
+/// Struct to reduce function parameters
 struct PassageContext<'a> {
     story_title: &'a mut Option<String>,
     passages: &'a mut IndexMap<String, Passage>,

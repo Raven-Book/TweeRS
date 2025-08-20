@@ -43,18 +43,6 @@ pub struct Passage {
     pub content: String,
 }
 
-/*
-/// Color
-pub enum Color {
-    Gray,
-    Red,
-    Orange,
-    Yellow,
-    Green,
-    Blue,
-    Purple,
-}*/
-
 /// StoryFormat
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoryFormat {
@@ -79,57 +67,6 @@ pub struct StoryFormat {
     #[serde(default)]
     pub license: Option<String>,
 }
-
-/*
-
-/// Simple version parsing for semantic version comparison
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct Version {
-    major: u32,
-    minor: u32,
-    patch: u32,
-    original: String,
-}
-
-/// Parse version string into Version struct
-
-impl Version {
-    fn parse(version: &str) -> Option<Self> {
-        let parts: Vec<&str> = version.split('.').collect();
-        if parts.len() >= 2 {
-            let major = parts[0].parse().ok()?;
-            let minor = parts[1].parse().ok()?;
-            let patch = if parts.len() >= 3 {
-                parts[2].parse().unwrap_or(0)
-            } else {
-                0
-            };
-            Some(Version {
-                major,
-                minor,
-                patch,
-                original: version.to_string(),
-            })
-        } else {
-            None
-        }
-    }
-}
-
-impl PartialOrd for Version {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Version {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.major.cmp(&other.major)
-            .then_with(|| self.minor.cmp(&other.minor))
-            .then_with(|| self.patch.cmp(&other.patch))
-    }
-}
-*/
 
 impl StoryData {
     /// Validate required fields
@@ -201,7 +138,6 @@ impl StoryFormat {
             .into());
         }
 
-        // First, try to find by directory name pattern: format-version
         let expected_dir_name = format!("{}-{}", story_format.to_lowercase(), version);
         let target_dir = format_dir.join(&expected_dir_name);
 
@@ -223,7 +159,6 @@ impl StoryFormat {
             }
         }
 
-        // Fallback: scan all directories and warn about non-standard naming
         let mut entries = tokio::fs::read_dir(&format_dir)
             .await
             .map_err(|_| format!("Failed to read directory: {}", format_dir.display()))?;
@@ -244,7 +179,6 @@ impl StoryFormat {
                 .and_then(|n| n.to_str())
                 .unwrap_or("");
 
-            // Check if directory follows the expected naming pattern
             if !dir_name.contains('-') {
                 tracing::warn!(
                     "Story format directory '{}' does not follow the standard naming pattern 'format-version'",

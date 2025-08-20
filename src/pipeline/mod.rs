@@ -26,13 +26,11 @@ impl PipeMap {
         self.data.contains_key(key)
     }
 
-    // Serialize specific types
     pub fn serialize_as<T: Serialize + Send + Sync + Any>(&self, key: &str) -> Option<Value> {
         let value = self.get::<T>(key)?;
         serde_json::to_value(value).ok()
     }
 
-    // Deserialize from JSON Value
     pub fn deserialize_from<T: for<'de> Deserialize<'de> + Send + Sync + Any>(
         &mut self,
         key: &str,
@@ -43,7 +41,6 @@ impl PipeMap {
         Ok(())
     }
 
-    // Deserialize from JSON string
     pub fn deserialize_from_str<T: for<'de> Deserialize<'de> + Send + Sync + Any>(
         &mut self,
         key: &str,
@@ -54,12 +51,10 @@ impl PipeMap {
         Ok(())
     }
 
-    // Insert serializable value
     pub fn insert_serializable<T: Send + Sync + Any + Serialize>(&mut self, key: &str, value: T) {
         self.insert(key, value);
     }
 
-    // Get all keys for debugging
     pub fn keys(&self) -> Vec<&String> {
         self.data.keys().collect()
     }
@@ -144,16 +139,13 @@ mod tests {
         data1.insert("count", 42i32);
         data1.insert("name", String::from("测试"));
 
-        // Serialize
         let count_json = data1.serialize_as::<i32>("count").unwrap();
         let name_json = data1.serialize_as::<String>("name").unwrap();
 
-        // Create new PipeMap and deserialize
         let mut data2 = PipeMap::new();
         data2.deserialize_from::<i32>("count", count_json).unwrap();
         data2.deserialize_from::<String>("name", name_json).unwrap();
 
-        // Verify data matches
         assert_eq!(data2.get::<i32>("count"), Some(&42));
         assert_eq!(data2.get::<String>("name"), Some(&String::from("测试")));
     }
