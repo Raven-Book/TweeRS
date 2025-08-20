@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::fs::OpenOptions;
 use tracing::error;
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 use tweers::cli::{Cli, Commands, build_command, pack_command, update_command};
@@ -7,12 +6,9 @@ use tweers::config::constants;
 
 #[tokio::main]
 async fn main() {
-    let log_file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(constants::LOG_FILE)
-        .expect("Failed to create log file");
+    constants::init_constants();
+
+    let log_file = tweers::logging::create_log_file().expect("Failed to create log file");
 
     tracing_subscriber::registry()
         .with(
@@ -41,7 +37,6 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    constants::init_constants();
     let args = Cli::parse();
     match args.cmd {
         Commands::Build {

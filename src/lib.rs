@@ -4,5 +4,6 @@ pub mod core;
 pub mod error;
 pub mod excel;
 pub mod js;
+pub mod logging;
 pub mod pipeline;
 pub mod util;
