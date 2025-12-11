@@ -404,7 +404,7 @@ pub async fn pack_command(
         .filter(|title| !title.is_empty())
         .unwrap_or_else(|| "story".to_string());
 
-    let actual_output_path = if output_path == PathBuf::from("package.zip") {
+    let actual_output_path = if output_path == Path::new("package.zip") {
         PathBuf::from(format!("{story_title}.zip"))
     } else {
         output_path
