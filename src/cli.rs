@@ -468,9 +468,9 @@ async fn pack_once(
 struct GithubRelease {
     tag_name: String,
     #[allow(dead_code)]
-    name: String,
+    name: Option<String>,
     #[allow(dead_code)]
-    body: String,
+    body: Option<String>,
     assets: Vec<GithubAsset>,
 }
 
@@ -493,14 +493,28 @@ pub async fn update_command(
     let response = client
         .get(&repo_api_url)
         .header("User-Agent", "TweeRS-Updater")
+        .header("Accept", "application/vnd.github.v3+json")
         .send()
         .await?;
 
-    if !response.status().is_success() {
-        return Err(format!("Failed to fetch release info: {}", response.status()).into());
+    let status = response.status();
+    if !status.is_success() {
+        let error_body = response.text().await.unwrap_or_default();
+        return Err(format!("Failed to fetch release info: {} - {}", status, error_body).into());
     }
 
-    let release: GithubRelease = response.json().await?;
+    let response_text = response.text().await?;
+    let release: GithubRelease = serde_json::from_str(&response_text).map_err(|e| {
+        format!(
+            "Failed to parse release info: {}. Response body: {}",
+            e,
+            if response_text.len() > 500 {
+                format!("{}...", &response_text[..500])
+            } else {
+                response_text.clone()
+            }
+        )
+    })?;
 
     let current_version = env!("CARGO_PKG_VERSION");
     let latest_version = release.tag_name.trim_start_matches('v');
