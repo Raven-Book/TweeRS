@@ -365,7 +365,7 @@ impl HtmlTemplateProcessor {
     /// Generate HTML from HtmlTable
     pub fn generate(table: &HtmlTable) -> ExcelResult<String> {
         let mut html = String::new();
-        html.push_str("<tweers-exceldata>\n");
+        html.push_str("<tweers-exceldata hidden>\n");
         html.push_str(&format!("\t<{}>\n", table.save_name));
 
         for (index, item) in table.items.iter().enumerate() {
