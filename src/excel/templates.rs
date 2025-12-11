@@ -1,7 +1,8 @@
 use super::arrays::ArrayHandler;
-use super::header::{ObjectTable, ObjectTableItem};
+use super::header::{HtmlTable, HtmlTableItem, ObjectTable, ObjectTableItem};
 use super::types::TypeRegistry;
 use crate::error::{ExcelParseError, ExcelResult};
+use crate::util::html::HtmlEscape;
 use std::collections::HashMap;
 
 /// Template types for save variable patterns
@@ -354,5 +355,84 @@ mod tests {
                 .unwrap();
 
         assert!(result.contains("Item.check([\n    {\n        id: 1,\n        name: \"test\"\n    }\n], [\n    {\n        id: 1,\n        name: \"test\"\n    }\n]);"));
+    }
+}
+
+/// HTML template processor for HtmlTable
+pub struct HtmlTemplateProcessor;
+
+impl HtmlTemplateProcessor {
+    /// Generate HTML from HtmlTable
+    pub fn generate(table: &HtmlTable) -> ExcelResult<String> {
+        let mut html = String::new();
+        html.push_str("<tweers-exceldata>\n");
+        html.push_str(&format!("\t<{}>\n", table.save_name));
+
+        for (index, item) in table.items.iter().enumerate() {
+            html.push_str(&Self::generate_item_html(
+                item,
+                &table.save_name,
+                index + 1,
+            )?);
+        }
+
+        html.push_str(&format!("\t</{}>\n", table.save_name));
+        html.push_str("</tweers-exceldata>");
+        Ok(html)
+    }
+
+    /// Generate HTML for a single item
+    fn generate_item_html(
+        item: &HtmlTableItem,
+        save_name: &str,
+        default_id: usize,
+    ) -> ExcelResult<String> {
+        // Always generate id in format {save_name}-{save_id}
+        let id = format!("{}-{}", save_name, default_id);
+
+        // Build attributes
+        let mut attributes = Vec::new();
+        attributes.push(format!("id=\"{}\"", HtmlEscape::escape_attribute(&id)));
+
+        // Collect fields that should be child tags
+        let mut child_tags = Vec::new();
+
+        // Process each field
+        for (key, value) in &item.fields {
+            if key == "id" {
+                // id is already handled above
+                continue;
+            }
+
+            // name column always as data-name attribute
+            if key == "name" {
+                attributes.push(format!(
+                    "data-name=\"{}\"",
+                    HtmlEscape::escape_attribute(value)
+                ));
+            }
+            // Other fields as child tags
+            else {
+                child_tags.push((key.clone(), value.clone()));
+            }
+        }
+
+        let attrs_str = attributes.join(" ");
+
+        // Generate the div tag with child tags if any
+        if child_tags.is_empty() {
+            Ok(format!("\t\t<div {}></div>\n", attrs_str))
+        } else {
+            let mut html = format!("\t\t<div {}>\n", attrs_str);
+            for (tag_name, content) in child_tags {
+                let escaped_content = HtmlEscape::escape_content(&content);
+                html.push_str(&format!(
+                    "\t\t\t<{}>{}</{}>\n",
+                    tag_name, escaped_content, tag_name
+                ));
+            }
+            html.push_str("\t\t</div>\n");
+            Ok(html)
+        }
     }
 }

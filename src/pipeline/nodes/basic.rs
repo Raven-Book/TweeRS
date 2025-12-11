@@ -202,21 +202,37 @@ impl FileParserNode {
                     let passage_name = file_path.to_string_lossy().to_string();
 
                     match ExcelParser::parse_file(file_path).await {
-                        Ok(js_code) => {
-                            if !js_code.is_empty() {
+                        Ok(result) => {
+                            // Create JavaScript passage if there's JavaScript code
+                            if !result.javascript.is_empty() {
                                 let passage = Passage {
                                     name: passage_name.clone(),
                                     tags: Some("init script".to_string()),
                                     position: None,
                                     size: None,
-                                    content: js_code,
+                                    content: result.javascript,
                                 };
 
-                                passages.insert(passage_name, passage);
+                                passages.insert(passage_name.clone(), passage);
                                 debug!(
                                     "Created JavaScript passage from Excel file: {:?}",
                                     file_path
                                 );
+                            }
+
+                            // Create HTML passage if there's HTML code
+                            if !result.html.is_empty() {
+                                let html_passage_name = format!("{}_html", passage_name);
+                                let html_passage = Passage {
+                                    name: html_passage_name.clone(),
+                                    tags: Some("html".to_string()),
+                                    position: None,
+                                    size: None,
+                                    content: result.html,
+                                };
+
+                                passages.insert(html_passage_name, html_passage);
+                                debug!("Created HTML passage from Excel file: {:?}", file_path);
                             }
                         }
                         Err(e) => {

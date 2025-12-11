@@ -1,4 +1,5 @@
 use crate::core::story::{Passage, StoryData, StoryFormat};
+use crate::util::html::HtmlEscape;
 use indexmap::IndexMap;
 use tracing::debug;
 
@@ -60,10 +61,13 @@ impl HtmlOutputHandler {
         let story_data_xml =
             Self::get_twine2_data_chunk(passages, &story_info, data, context.is_debug)?;
 
-        let html = story_format
+        let mut html = story_format
             .source
             .replace("{{STORY_NAME}}", name)
             .replace("{{STORY_DATA}}", &story_data_xml);
+
+        // Insert HTML passages into <body>
+        html = Self::insert_html_passages(html, passages)?;
 
         Ok(html)
     }
@@ -118,10 +122,13 @@ impl HtmlOutputHandler {
                 let story_data_xml =
                     Self::get_twine2_data_chunk(passages, &story_info, data, context.is_debug)?;
 
-                let html = story_format
+                let mut html = story_format
                     .source
                     .replace("{{STORY_NAME}}", name)
                     .replace("{{STORY_DATA}}", &story_data_xml);
+
+                // Insert HTML passages into <body>
+                html = Self::insert_html_passages(html, passages)?;
 
                 return Ok(html);
             }
@@ -184,10 +191,13 @@ impl HtmlOutputHandler {
             let story_data_xml =
                 Self::get_twine2_data_chunk(passages, &story_info, story_data, context.is_debug)?;
 
-            let html = story_format
+            let mut html = story_format
                 .source
                 .replace("{{STORY_NAME}}", name)
                 .replace("{{STORY_DATA}}", &story_data_xml);
+
+            // Insert HTML passages into <body>
+            html = Self::insert_html_passages(html, passages)?;
 
             Ok(html)
         } else {
@@ -293,18 +303,15 @@ impl HtmlOutputHandler {
 
             if let Some(ref tags) = passage.tags {
                 let tags_list: Vec<&str> = tags.split_whitespace().collect();
-                if tags_list.contains(&"script") || tags_list.contains(&"stylesheet") {
+                if tags_list.contains(&"script")
+                    || tags_list.contains(&"stylesheet")
+                    || tags_list.contains(&"html")
+                {
                     continue;
                 }
             }
 
-            let escaped_content = passage
-                .content
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+            let escaped_content = HtmlEscape::escape_content(&passage.content);
 
             let tags = passage.tags.as_deref().unwrap_or("");
             let position = passage.position.as_deref().unwrap_or("");
@@ -348,5 +355,63 @@ impl HtmlOutputHandler {
         );
 
         Ok(story_data_xml)
+    }
+
+    /// Insert HTML passages into the <body> tag of the HTML
+    fn insert_html_passages(
+        html: String,
+        passages: &IndexMap<String, Passage>,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        // Collect all HTML passages
+        let mut html_contents = Vec::new();
+        for passage in passages.values() {
+            if let Some(ref tags) = passage.tags {
+                let tags_list: Vec<&str> = tags.split_whitespace().collect();
+                if tags_list.contains(&"html") {
+                    html_contents.push(passage.content.clone());
+                }
+            }
+        }
+
+        if html_contents.is_empty() {
+            return Ok(html);
+        }
+
+        // Combine all HTML contents
+        let combined_html = html_contents.join("\n");
+
+        // Find <body> tag and insert HTML content
+        // Try to find <body> or <body ...> (with attributes)
+        if let Some(body_start) = html.find("<body") {
+            // Find the end of the opening body tag
+            let body_tag_end = if let Some(end) = html[body_start..].find('>') {
+                body_start + end + 1
+            } else {
+                return Err("Malformed <body> tag".into());
+            };
+
+            // Insert HTML content right after <body> tag
+            let mut result = String::with_capacity(html.len() + combined_html.len() + 10);
+            result.push_str(&html[..body_tag_end]);
+            result.push('\n');
+            result.push_str(&combined_html);
+            result.push('\n');
+            result.push_str(&html[body_tag_end..]);
+            Ok(result)
+        } else {
+            // If no <body> tag found, append before </html>
+            if let Some(html_end_pos) = html.rfind("</html>") {
+                let mut result = String::with_capacity(html.len() + combined_html.len() + 10);
+                result.push_str(&html[..html_end_pos]);
+                result.push('\n');
+                result.push_str(&combined_html);
+                result.push('\n');
+                result.push_str(&html[html_end_pos..]);
+                Ok(result)
+            } else {
+                // If no </html> tag, just append at the end
+                Ok(format!("{html}\n{combined_html}"))
+            }
+        }
     }
 }

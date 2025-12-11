@@ -1,8 +1,17 @@
-use super::header::{HeaderRegistry, ObjectTable, ParameterTable, RawHeaderData, TableResult};
-use super::templates::TemplateProcessor;
+use super::header::{
+    HeaderRegistry, HtmlTable, ObjectTable, ParameterTable, RawHeaderData, TableResult,
+};
+use super::templates::{HtmlTemplateProcessor, TemplateProcessor};
 use crate::error::{ExcelParseError, ExcelResult};
 use calamine::{Data, Reader, Xlsx, open_workbook};
 use std::path::Path;
+
+/// Result of parsing an Excel file
+#[derive(Debug, Clone)]
+pub struct ExcelParseResult {
+    pub javascript: String,
+    pub html: String,
+}
 
 pub struct ExcelParser {
     workbook: Xlsx<std::io::BufReader<std::fs::File>>,
@@ -113,14 +122,25 @@ impl ExcelParser {
         Ok(js_code)
     }
 
-    /// Parse an Excel file and generate JavaScript code
-    pub async fn parse_file<P: AsRef<Path>>(path: P) -> ExcelResult<String> {
+    pub fn generate_html(html_tables: &[HtmlTable]) -> ExcelResult<String> {
+        let mut html_parts = Vec::new();
+
+        for table in html_tables {
+            html_parts.push(HtmlTemplateProcessor::generate(table)?);
+        }
+
+        Ok(html_parts.join("\n\n"))
+    }
+
+    /// Parse an Excel file and generate JavaScript code and HTML
+    pub async fn parse_file<P: AsRef<Path>>(path: P) -> ExcelResult<ExcelParseResult> {
         let path = path.as_ref().to_path_buf();
 
-        tokio::task::spawn_blocking(move || -> ExcelResult<String> {
+        tokio::task::spawn_blocking(move || -> ExcelResult<ExcelParseResult> {
             let mut parser = ExcelParser::new(&path)?;
             let mut object_tables = Vec::new();
             let mut parameter_tables = Vec::new();
+            let mut html_tables = Vec::new();
 
             let worksheet_names: Vec<String> = parser
                 .workbook
@@ -146,6 +166,13 @@ impl ExcelParser {
                                 parameter_tables.push(parameter_table.clone());
                             }
                         }
+                        "html" => {
+                            if let Some(html_table) =
+                                table_result.as_any().downcast_ref::<HtmlTable>()
+                            {
+                                html_tables.push(html_table.clone());
+                            }
+                        }
                         _ => {
                             continue;
                         }
@@ -156,7 +183,16 @@ impl ExcelParser {
                 }
             }
 
-            Self::generate_javascript(&object_tables, &parameter_tables)
+            // Generate JavaScript for object and parameter tables
+            let js_code = Self::generate_javascript(&object_tables, &parameter_tables)?;
+
+            // Generate HTML for HTML tables
+            let html_code = Self::generate_html(&html_tables)?;
+
+            Ok(ExcelParseResult {
+                javascript: js_code,
+                html: html_code,
+            })
         })
         .await
         .map_err(|e| ExcelParseError::config_error(e.to_string()))?

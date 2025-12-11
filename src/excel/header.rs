@@ -83,6 +83,7 @@ impl Default for HeaderRegistry {
         let mut registry = Self::new();
         registry.register(ObjectTableHeaderParser);
         registry.register(ParameterTableHeaderParser);
+        registry.register(HtmlTableHeaderParser);
         registry
     }
 }
@@ -349,5 +350,118 @@ impl ParameterTableHeaderParser {
             value,
             comment,
         }))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HtmlTableItem {
+    pub fields: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HtmlTable {
+    pub save_name: String,
+    pub headers: Vec<String>,
+    pub items: Vec<HtmlTableItem>,
+}
+
+impl TableResult for HtmlTable {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn table_type(&self) -> &str {
+        "html"
+    }
+}
+
+/// HTML table header parser implementation
+pub struct HtmlTableHeaderParser;
+
+impl HeaderParser for HtmlTableHeaderParser {
+    fn required_headers(&self) -> Vec<&'static str> {
+        vec!["#save", "#html"]
+    }
+
+    fn parse_complete_table(
+        &self,
+        raw_data: &RawHeaderData,
+        data_rows: &[&[calamine::Data]],
+    ) -> ExcelResult<Box<dyn TableResult>> {
+        let mut save_name = String::new();
+        let mut headers = Vec::new();
+
+        for row in &raw_data.rows {
+            if row.is_empty() {
+                continue;
+            }
+
+            let first_cell = &row[0];
+
+            if first_cell.starts_with("#save") {
+                if row.len() > 1 {
+                    save_name = row[1].clone();
+                } else {
+                    return Err(ExcelParseError::InvalidFormat(
+                        "Missing save name".to_string(),
+                    ));
+                }
+            } else if first_cell.starts_with("#html") {
+                headers = row.iter().skip(1).cloned().collect();
+            }
+        }
+
+        if save_name.is_empty() {
+            return Err(ExcelParseError::missing_header("save"));
+        }
+        if headers.is_empty() {
+            return Err(ExcelParseError::missing_header("column headers"));
+        }
+
+        let mut items = Vec::new();
+        for row in data_rows {
+            if let Some(item) = Self::parse_html_data_row(row, &headers)? {
+                items.push(item);
+            }
+        }
+
+        let table = HtmlTable {
+            save_name,
+            headers,
+            items,
+        };
+
+        Ok(Box::new(table))
+    }
+
+    fn parser_name(&self) -> &'static str {
+        "HtmlTableHeaderParser"
+    }
+}
+
+impl HtmlTableHeaderParser {
+    fn parse_html_data_row(
+        row: &[calamine::Data],
+        headers: &[String],
+    ) -> ExcelResult<Option<HtmlTableItem>> {
+        if row.is_empty() {
+            return Ok(None);
+        }
+
+        let mut fields = HashMap::new();
+        for (i, header) in headers.iter().enumerate() {
+            if i + 1 < row.len() {
+                let value = row[i + 1].to_string();
+                if !value.is_empty() {
+                    fields.insert(header.clone(), value);
+                }
+            }
+        }
+
+        if fields.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(HtmlTableItem { fields }))
     }
 }
