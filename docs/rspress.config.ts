@@ -4,11 +4,7 @@ import { defineConfig } from 'rspress/config';
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
   title: 'TweeRS',
-  // icon: '/rspress-icon.png',
-  // logo: {
-  //   light: '/rspress-light-logo.png',
-  //   dark: '/rspress-dark-logo.png',
-  // },
+  base: '/TweeRS/',
   themeConfig: {
     socialLinks: [
       {
