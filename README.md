@@ -1,174 +1,81 @@
 # TweeRS
-> [Scrips](./scripts/Scripts.md) 内有可供使用的注入脚本
+> Twee / Twine 文件构建与打包工具，支持脚本注入与 Excel 数据导出  
+> [脚本示例](./scripts/Scripts.md)
 
-当前版本: `0.1.15`
+当前版本: `0.1.20`
 
-## 1. 项目简介
+## 项目简介
+- 将 `.twee` / `.tw` 转为 HTML，支持监听、起始片段指定、媒体 Base64 打包。
+- `pack` 模式可同时压缩资源，适合分发发布。
+- 内置脚本注入管线，可在读取 Twee 或生成 HTML 后执行自定义 JS。
+- Excel 数据转 JS/HTML：支持对象表、参数表与 HTML 表，生成 JS 赋值或嵌入 `<tweers-exceldata>`。
 
-## 2. 常用命令
+## 安装
+- 下载 Release 可执行文件并置于任意目录（建议与 `story-format/`、`scripts/` 同级）。
+- 或源码构建：`cargo build --release`，产物位于 `target/release/tweers`。
+- Rspress 文档站开发：进入 `docs/` 后 `pnpm install && pnpm run dev`。
 
-### 2.1. 命令参数说明
-
-#### 2.1.1 build 命令
-将 Twee 文件构建为 HTML 并输出
-
-**语法：**
-
+## 快速开始
 ```bash
-tweers build <source_dir> [OPTIONS]
-```
-
-**参数：**
-
-- `<source_dir>`：输入文件路径（必需）
-- `-o, --output-path <output_dir>`：输出文件路径（默认：`index.html`）
-- `-s, --start-passage <passage_name>`：指定故事的起始片段
-- `-b, --base64`：将资源文件转为 base64 打包在片段中
-- `-w, --watch`：启用文件监听模式，自动重新构建
-- `-t, --is-debug`：启用调试模式，输出详细日志信息
-
-**示例：**
-
-```bash
-# 基本构建
-tweers build story/
-
-# 指定输出路径
+# 构建 HTML
 tweers build story/ -o dist/index.html
 
-# 启用 base64 模式打包媒体文件
-tweers build story/ -o dist/index.html -b
+# 监听模式
+tweers build story/ -w -o dist/index.html
 
-# 启用监听模式
-tweers build story/ -w
+# Base64 打包媒体并指定起始片段
+tweers build story/ -b -s Start
 
-# 启用调试模式
-tweers build story/ -t
-
-# 指定起始片段
-tweers build story/ -s Start
-
-# 组合使用多个选项
-tweers build story/ -o dist/index.html -b -w -t -s "Prologue A"
+# 构建并打包资源
+tweers pack story/ -a assets/ -o package.zip
 ```
 
-#### 2.1.2 pack 命令
-> [可选] 下载 [ffmpeg](https://ffmpeg.org/) 支持音视频文件压缩
+## 命令说明
+### build
+- `tweers build <source_dir> [-o <output>][-s <start>][-b][-w][-t]`
+- 主要参数：
+  - `-o, --output-path` 输出 HTML，默认 `index.html`
+  - `-s, --start-passage` 指定起始片段
+  - `-b, --base64` 媒体转 Base64 嵌入
+  - `-w, --watch` 监听源文件变更
+  - `-t, --is-debug` 输出调试日志
 
-构建 HTML 并压缩资源打包文件
-**语法：**
+### pack
+- `tweers pack <source_dir> -a <assets_dir>... [-o <zip>][-f][-t]`
+- 主要参数：
+  - `-a, --assets` 需压缩的资源目录，可多次指定
+  - `-o, --output-path` 输出压缩包，默认 `package.zip`
+  - `-f, --fast-compression` 快速压缩（低质量高速度）
+  - `-t, --is-debug` 调试日志
+> 可选安装 ffmpeg 以获得更好的音视频压缩体验。
 
-```bash
-tweers pack <source_dir> [OPTIONS]
-```
+### update
+- `tweers update [-f]`：更新到最新发布版（`-f` 强制更新）。
 
-**参数：**
+## Excel 模板速览
+- 表头行以 `#` 开头；对象表需要 `#save`、`#obj`、`#type` 三行；参数表需要 `#save`、`#var`；HTML 表需要 `#save`、`#html`。
+- 保存变量写在 `#save` 后，支持三类模板：
+  - `all#Target($content)`：批量生成数组并传入模板中的 `$content`。
+  - `single#Target($name,{displayName:$displayName},$tags)`：逐行展开占位符。
+  - 直接变量名（如 `window.items`）：生成 `window.items = [...]`。
+- HTML 表会生成 `<tweers-exceldata><saveName>...</saveName></tweers-exceldata>`，`id` 固定为 `<saveName>-<行号>`，`name` 列会写入 `data-name`。
+- 示例与工具：见 `test/excel/example.xlsx`、`scripts/tool/get-value.js`（提供 `GetValue.byId/byName` 读取 HTML 数据）。
 
-- `<source_dir>`：输入文件路径（必需）
-- `-a, --assets <assets_dir>`：需要压缩的资源目录路径（可指定多个）
-- `-o, --output-path <output_path>`：输出压缩包路径（默认：`package.zip`，自动使用故事标题命名）
-- `-f, --fast-compression`：启用快速压缩模式
-- `-t, --is-debug`：启用调试模式，输出详细日志信息
+## 脚本注入
+- 在 `scripts/` 下放置数据注入脚本（处理 Twee 数据）或 HTML 注入脚本（生成后替换）。
+- 示例：
+  - `scripts/html/sugarcube/save-slots.js`：修改存档插槽上限。
+  - `scripts/data/sugarcube/i18.js`：按语言前缀过滤/重命名片段。
+  - `scripts/tool/get-value.js`：运行时读取 `<tweers-exceldata>`。
 
-**示例：**
+## 特性状态
+- [x] 正则匹配与 JS 注入
+- [x] Excel 支持（对象/参数/HTML 表）
+- [x] 媒体压缩（图片/音频/视频）
+- [ ] import/export 语法控制资源顺序
+- [ ] 文件监听与异步逻辑优化
+- [ ] Twine 1 / Harlowe 支持
+- [ ] NPM 包集成与英语文档
 
-```bash
-# 基本打包（自动命名为故事标题.zip）
-tweers pack story/ -a assets/
-
-# 指定多个资源目录
-tweers pack story/ -a images/ -a audio/ -a videos/
-
-# 指定输出文件名
-tweers pack story/ -a assets/ -o my-story.zip
-
-# 启用快速压缩
-tweers pack story/ -a assets/ -f
-
-# 启用调试模式
-tweers pack story/ -a assets/ -t
-
-# 组合使用多个选项
-tweers pack story/ -a assets/ -o my-story.zip -f -t
-```
-
-## 3. twee 注入
-> 欢迎投稿 `twee` 通用注入脚本
-
-注入分为两种。读取完 twee 文件后执行注入脚本，或是生成完 html 后替换内容。
-
-- 情况1
-    ```js
-    if (format.name === "SugarCube" && format.version === "2.37.3") {
-        for (let passageName in input) {
-            let passage = input[passageName];
-            
-            if (passageName.includes("事件")) {
-                if (!passage.tags) {
-                    passage.tags = "";
-                }
-                
-                if (!passage.tags.includes("事件")) {
-                    const tagsArray = passage.tags.trim().split(/\s+/);
-                    tagsArray.push("event");
-                    passage.tags = tagsArray.join(' '); 
-                    console.log(`Added "事件" tag to passage: ${passageName}`);
-                }        
-                console.log(JSON.stringify(passage));
-            }        
-        }
-    }
-    
-    return input;
-    ```
-- 情况2
-    ```js
-    const customStyles = `
-    <style>
-    /* Custom styles for enhanced UI */
-    .macro-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    </style>`;
-    
-    const headCloseIndex = input.indexOf('</head>');
-    if (headCloseIndex !== -1) {
-        input = input.slice(0, headCloseIndex) + customStyles + '\n' + input.slice(headCloseIndex);
-        console.log('Added custom styles to head section');
-    } else {
-        console.log('Warning: </head> tag not found, could not add styles');
-    }
-    
-    return input;
-    ```
----
-与可执行文件同级的的 `scripts` 文件夹下可以放脚本:
-```
-📂
-├── tweers[.exe]        - 可执行文件
-├── story-format/       - 故事格式目录
-└── scripts/            - 脚本目录
-    ├── data/
-    │   ├── 01-toc.js       - 自动生成目录
-    │   ├── 02-navigation.js - 导航处理
-    │   └── 10-i18n.js      - 国际化脚本
-    └── html/
-        └── 01-theme.js     - 主题样式注入
-```
-
-## 5. Features
-- [x] 增加正则匹配模块与JS注入模块
-- [ ] 支持 import/export 语法, 以控制 JavaScript/CSS 资源加载顺序
-- [ ] 修复文件监听和异步处理中的逻辑问题
-- [ ] 重构项目架构以支持 NPM 包管理
-- [ ] 兼容 Twine 1 格式文件
-- [ ] 支持 Harlowe 故事格式
-- [ ] 完善英文文档
-- [ ] 集成 NPM 包支持
-- [ ] javascript 压缩混淆
-- [x] 支持图片/音频/视频等媒体资源压缩
-- [x] 支持 Excel 文件
-
-## 7. Link
-- Q群: 1044470765
+## 链接
+- QQ 群：1044470765
