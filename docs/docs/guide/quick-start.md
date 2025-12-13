@@ -42,10 +42,8 @@ tweers pack story/ -a assets/ -o package.zip
 📂
 ├── tweers[.exe]
 ├── story-format/
-├── scripts/
-│   ├── data/    # 处理 Twee 数据
-│   └── html/    # 处理生成后的 HTML
-├── story/       # 源 twee/tw
-└── assets/      # 资源
+└── scripts/
+    ├── data/    # 处理 Twee 数据
+    └── html/    # 处理生成后的 HTML
 ```
 
