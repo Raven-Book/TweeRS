@@ -125,7 +125,8 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
                 for (passage_name, passage) in passages {
                     all_passages.insert(passage_name, passage);
                 }
-                if story_data.is_none() {
+                // Use the first non-None StoryData found
+                if data.is_some() && story_data.is_none() {
                     story_data = data;
                 }
             }

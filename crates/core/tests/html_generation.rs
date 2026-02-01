@@ -35,6 +35,9 @@ fn test_html_generation_from_test_story() {
     collect_story_files(&story_dir, &mut story_files);
     assert!(!story_files.is_empty(), "No story files found");
 
+    // Sort files to ensure deterministic ordering across different filesystems
+    story_files.sort();
+
     // Read all story files
     let mut sources = Vec::new();
     for file in story_files {
