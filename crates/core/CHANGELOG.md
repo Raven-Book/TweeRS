@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.1.0
+
+### New Features
+
+- [`acd8aab`](https://github.com/Raven-Book/TweeRS/commit/acd8aab570a0f167b73d612a3f403575cf2ff71b): Add WASM module with basic API support
+
+### Performance Improvements
+
+- [`5872206`](https://github.com/Raven-Book/TweeRS/commit/587220683a4d08e9df0db8b0900338fe91f64c37): Remove unused JavaScript engine integration code
+
 ## v1.0.0
 
 ### Refactors
