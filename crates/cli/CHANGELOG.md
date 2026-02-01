@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1
+
+### Bug Fixes
+
+- [`7038612`](https://github.com/Raven-Book/TweeRS/commit/7038612eddda56e5c67b2337eb848d7aeaa39d15): Fix version comparison in update command to correctly parse release tags with 'tweers-cli-v' prefix, preventing unnecessary re-downloads of the same version.
+
 ## v1.0.0
 
 ### Chores
