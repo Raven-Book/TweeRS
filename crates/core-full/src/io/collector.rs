@@ -26,6 +26,9 @@ impl<F: FileFilter> FileCollector<F> {
             }
         }
 
+        // Sort files to ensure deterministic ordering across different filesystems
+        files.sort();
+
         Ok(files)
     }
 
