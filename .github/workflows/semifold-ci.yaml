@@ -2,6 +2,10 @@ name: Semifold CI
 on:
   push:
     branches: [master]
+    paths:
+      - "crates/**"
+      - "Cargo.lock"
+      - "Cargo.toml"
   workflow_dispatch:
 
 env:
