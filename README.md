@@ -2,7 +2,7 @@
 > Twee / Twine 文件构建与打包工具，支持脚本注入与 Excel 数据导出  
 > [脚本示例](./scripts/Scripts.md)
 
-当前版本: `0.1.20`
+当前版本: `1.0.1`
 
 ## 项目简介
 - 将 `.twee` / `.tw` 转为 HTML，支持监听、起始片段指定、媒体 Base64 打包。
@@ -72,10 +72,4 @@ tweers pack story/ -a assets/ -o package.zip
 - [x] 正则匹配与 JS 注入
 - [x] Excel 支持（对象/参数/HTML 表）
 - [x] 媒体压缩（图片/音频/视频）
-- [ ] import/export 语法控制资源顺序
-- [ ] 文件监听与异步逻辑优化
 - [ ] Twine 1 / Harlowe 支持
-- [ ] NPM 包集成与英语文档
-
-## 链接
-- QQ 群：1044470765
