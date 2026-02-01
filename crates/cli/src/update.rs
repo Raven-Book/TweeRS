@@ -56,7 +56,10 @@ pub async fn update_command(
     })?;
 
     let current_version = env!("CARGO_PKG_VERSION");
-    let latest_version = release.tag_name.trim_start_matches('v');
+    let latest_version = release
+        .tag_name
+        .trim_start_matches("tweers-cli-v")
+        .trim_start_matches('v');
 
     info!("Current version: {}", current_version);
     info!("Latest version: {}", latest_version);
