@@ -10,7 +10,9 @@ use crate::cli::{Cli, Commands};
 use crate::update::update_command;
 use tweers_asset::{ArchiveCreatorNode, AssetCompressorNode};
 use tweers_core::config::constants;
-use tweers_core_full::commands::{build_command, pack_command_with_nodes};
+use tweers_core_full::commands::{build_command_with_nodes, pack_command_with_nodes};
+use tweers_js::manager::ScriptManager;
+use tweers_js::nodes::{DataProcessorNode, HtmlProcessorNode};
 
 #[tokio::main]
 async fn main() {
@@ -55,7 +57,37 @@ async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             base64,
             start_passage,
         } => {
-            build_command(sources, output_path, watch, is_debug, base64, start_passage).await?;
+            let script_manager = ScriptManager::default();
+            let mut data_nodes: Vec<Box<dyn tweers_core_full::pipeline::PipeNode + Send + Sync>> =
+                vec![];
+            let mut html_nodes: Vec<Box<dyn tweers_core_full::pipeline::PipeNode + Send + Sync>> =
+                vec![];
+
+            if script_manager.has_data_scripts() {
+                data_nodes.push(Box::new(
+                    DataProcessorNode::new(script_manager.clone())
+                        .expect("Failed to create DataProcessorNode"),
+                ));
+            }
+
+            if script_manager.has_html_scripts() {
+                html_nodes.push(Box::new(
+                    HtmlProcessorNode::new(script_manager.clone())
+                        .expect("Failed to create HtmlProcessorNode"),
+                ));
+            }
+
+            build_command_with_nodes(
+                sources,
+                output_path,
+                watch,
+                is_debug,
+                base64,
+                start_passage,
+                data_nodes,
+                html_nodes,
+            )
+            .await?;
         }
         Commands::Pack {
             sources,
