@@ -65,9 +65,10 @@ impl PipelineBuilder {
     pub fn build(self) -> Result<Pipeline> {
         let mut nodes = Vec::new();
         for name in &self.node_names {
-            let node = self.registry.create(name).ok_or_else(|| {
-                TweersError::invalid_config(format!("Node '{}' not found", name))
-            })?;
+            let node = self
+                .registry
+                .create(name)
+                .ok_or_else(|| TweersError::invalid_config(format!("Node '{}' not found", name)))?;
             nodes.push(node);
         }
 

@@ -1,6 +1,6 @@
 // Unit tests for TypedKey system
-use tweers_core::pipeline::{PipeMap, SOURCES, BASE64};
 use std::path::PathBuf;
+use tweers_core::pipeline::{BASE64, PipeMap, SOURCES};
 
 #[test]
 fn test_typed_key_basic() {

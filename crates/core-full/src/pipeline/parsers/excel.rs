@@ -2,7 +2,7 @@ use super::r#trait::FileParser;
 /// Excel file parser
 use async_trait::async_trait;
 use indexmap::IndexMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::Result;
 use tweers_core::excel::parser::ExcelParser;
@@ -17,7 +17,7 @@ impl FileParser for ExcelFileParser {
 
     async fn parse(
         &self,
-        file_path: &PathBuf,
+        file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)> {
         let bytes = tokio::fs::read(file_path).await?;
         let result = ExcelParser::parse_from_bytes(bytes)?;

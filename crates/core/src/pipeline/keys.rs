@@ -27,10 +27,7 @@ impl<T> TypedKey<T> {
 
 impl<T> Clone for TypedKey<T> {
     fn clone(&self) -> Self {
-        Self {
-            name: self.name,
-            _phantom: PhantomData,
-        }
+        *self
     }
 }
 

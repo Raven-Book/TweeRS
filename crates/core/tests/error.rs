@@ -1,6 +1,6 @@
 // Unit tests for error handling
-use tweers_core::error::TweersError;
 use std::io;
+use tweers_core::error::TweersError;
 
 #[test]
 fn test_error_from_io() {

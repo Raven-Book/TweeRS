@@ -1,7 +1,7 @@
 // Unit tests for NodeRegistry
-use tweers_core::pipeline::{NodeRegistry, PipeMap, PipeNode};
-use tweers_core::error::Result;
 use async_trait::async_trait;
+use tweers_core::error::Result;
+use tweers_core::pipeline::{NodeRegistry, PipeMap, PipeNode};
 
 // Test node implementation
 struct TestNode {

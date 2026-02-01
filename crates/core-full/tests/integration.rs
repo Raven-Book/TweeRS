@@ -1,20 +1,13 @@
 // End-to-end integration test for build pipeline
-use tweers_core_full::pipeline::{
-    PipeMap, Pipeline,
-    nodes::basic::*,
-};
-use tweers_core::pipeline::{SOURCES, BASE64};
 use std::path::PathBuf;
+use tweers_core::pipeline::{BASE64, SOURCES};
+use tweers_core_full::pipeline::{nodes::basic::*, PipeMap, Pipeline};
 
 #[tokio::test]
 async fn test_file_collection_and_parsing() {
     // Setup test paths
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let test_dir = manifest_dir
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
+    let test_dir = manifest_dir.parent().unwrap().parent().unwrap();
 
     let story_dir = test_dir.join("test/story");
 
@@ -36,7 +29,11 @@ async fn test_file_collection_and_parsing() {
         eprintln!("Pipeline execution failed: {:?}", e);
     }
 
-    assert!(result.is_ok(), "Pipeline execution failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Pipeline execution failed: {:?}",
+        result.err()
+    );
 
     let output = result.unwrap();
 

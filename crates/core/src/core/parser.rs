@@ -70,10 +70,10 @@ impl TweeParser {
         }
 
         // Merge story_title into story_data if present
-        if let Some(title) = story_title {
-            if let Some(ref mut data) = story_data {
-                data.name = Some(title);
-            }
+        if let Some(title) = story_title
+            && let Some(ref mut data) = story_data
+        {
+            data.name = Some(title);
         }
 
         Ok((passages, story_data))

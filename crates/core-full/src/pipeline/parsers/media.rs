@@ -3,7 +3,7 @@ use super::r#trait::FileParser;
 use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use indexmap::IndexMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::Result;
 use tweers_core::util::file::{get_media_passage_type, get_mime_type_prefix};
@@ -30,7 +30,7 @@ impl FileParser for MediaFileParser {
 
     async fn parse(
         &self,
-        file_path: &PathBuf,
+        file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)> {
         if !self.base64 {
             return Ok((IndexMap::new(), None));

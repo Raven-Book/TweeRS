@@ -105,9 +105,7 @@ pub struct BuildOutput {
 }
 
 /// Pure build function - no I/O (synchronous)
-pub fn build(
-    config: BuildConfig,
-) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
+pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
     use crate::core::output::HtmlOutputHandler;
     use crate::core::parser::TweeParser;
     use crate::core::story::StoryFormat;
@@ -137,23 +135,22 @@ pub fn build(
                 mime_type: _,
             } => {
                 // Handle bytes (e.g., Excel files)
-                if let Some(ext) = std::path::Path::new(name).extension() {
-                    if let Some(ext_str) = ext.to_str() {
-                        if matches!(ext_str, "xlsx" | "xlsm" | "xlsb" | "xls") {
-                            use crate::excel::parser::ExcelParser;
-                            let result = ExcelParser::parse_from_bytes(data.clone())?;
+                if let Some(ext) = std::path::Path::new(name).extension()
+                    && let Some(ext_str) = ext.to_str()
+                    && matches!(ext_str, "xlsx" | "xlsm" | "xlsb" | "xls")
+                {
+                    use crate::excel::parser::ExcelParser;
+                    let result = ExcelParser::parse_from_bytes(data.clone())?;
 
-                            if !result.javascript.is_empty() {
-                                let passage = crate::core::story::Passage {
-                                    name: name.clone(),
-                                    tags: Some("init script".to_string()),
-                                    position: None,
-                                    size: None,
-                                    content: result.javascript,
-                                };
-                                all_passages.insert(name.clone(), passage);
-                            }
-                        }
+                    if !result.javascript.is_empty() {
+                        let passage = crate::core::story::Passage {
+                            name: name.clone(),
+                            tags: Some("init script".to_string()),
+                            position: None,
+                            size: None,
+                            content: result.javascript,
+                        };
+                        all_passages.insert(name.clone(), passage);
                     }
                 }
             }

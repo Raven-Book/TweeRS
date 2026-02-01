@@ -197,7 +197,10 @@ fn extract_tar_gz(
 
 /// Extract TAR.GZ archive to target directory (Windows stub)
 #[cfg(windows)]
-fn extract_tar_gz(_data: &[u8], _target_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn extract_tar_gz(
+    _data: &[u8],
+    _target_dir: &Path,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Err("TAR.GZ extraction not supported on Windows - this should not be called".into())
 }
 

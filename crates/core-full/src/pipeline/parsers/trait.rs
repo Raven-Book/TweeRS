@@ -1,7 +1,7 @@
 /// File parser trait for strategy pattern
 use async_trait::async_trait;
 use indexmap::IndexMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::Result;
 
@@ -13,6 +13,6 @@ pub trait FileParser: Send + Sync {
     /// Parse the file and return passages and optional story data
     async fn parse(
         &self,
-        file_path: &PathBuf,
+        file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)>;
 }

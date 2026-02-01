@@ -170,6 +170,7 @@ pub async fn build_command(
 }
 
 /// Build command with external node injection support
+#[allow(clippy::too_many_arguments)]
 pub async fn build_command_with_nodes(
     sources: Vec<PathBuf>,
     dist: PathBuf,

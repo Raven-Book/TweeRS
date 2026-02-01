@@ -1,8 +1,8 @@
 // Integration tests for FileParser
+use std::path::PathBuf;
+use tweers_core::error::Result;
 use tweers_core_full::pipeline::parsers::twee::TweeFileParser;
 use tweers_core_full::pipeline::parsers::FileParser;
-use tweers_core::error::Result;
-use std::path::PathBuf;
 
 #[tokio::test]
 async fn test_twee_parser() {

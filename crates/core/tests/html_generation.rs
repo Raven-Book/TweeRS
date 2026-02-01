@@ -1,7 +1,7 @@
 // End-to-end HTML generation test
-use tweers_core::api::{BuildConfig, StoryFormatInfo, InputSource};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
+use tweers_core::api::{BuildConfig, InputSource, StoryFormatInfo};
 
 fn collect_story_files(dir: &PathBuf, files: &mut Vec<PathBuf>) {
     if let Ok(entries) = fs::read_dir(dir) {
@@ -22,18 +22,13 @@ fn collect_story_files(dir: &PathBuf, files: &mut Vec<PathBuf>) {
 fn test_html_generation_from_test_story() {
     // Setup test paths
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let test_dir = manifest_dir
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
+    let test_dir = manifest_dir.parent().unwrap().parent().unwrap();
 
     let story_dir = test_dir.join("test/story");
     let format_file = test_dir.join("test/story-format/sugarcube-2.37.3/format.js");
 
     // Load format source
-    let format_source = std::fs::read_to_string(&format_file)
-        .expect("Failed to read format file");
+    let format_source = std::fs::read_to_string(&format_file).expect("Failed to read format file");
 
     // Collect all .twee and .tw files
     let mut story_files = Vec::new();
@@ -43,8 +38,7 @@ fn test_html_generation_from_test_story() {
     // Read all story files
     let mut sources = Vec::new();
     for file in story_files {
-        let content = std::fs::read_to_string(&file)
-            .expect(&format!("Failed to read {:?}", file));
+        let content = std::fs::read_to_string(&file).expect(&format!("Failed to read {:?}", file));
         let name = file.file_name().unwrap().to_string_lossy().to_string();
         sources.push(InputSource::Text { name, content });
     }
@@ -57,9 +51,7 @@ fn test_html_generation_from_test_story() {
     };
 
     // Create build config
-    let config = BuildConfig::new(format_info)
-        .sources(sources)
-        .debug(false);
+    let config = BuildConfig::new(format_info).sources(sources).debug(false);
 
     // Build HTML (synchronous)
     let result = tweers_core::api::build(config);
@@ -69,6 +61,12 @@ fn test_html_generation_from_test_story() {
 
     // Verify HTML output
     assert!(!output.html.is_empty(), "HTML output is empty");
-    assert!(output.html.contains("Test Story"), "HTML should contain story title");
-    assert!(output.html.contains("Welcome to the test story"), "HTML should contain passage content");
+    assert!(
+        output.html.contains("Test Story"),
+        "HTML should contain story title"
+    );
+    assert!(
+        output.html.contains("Welcome to the test story"),
+        "HTML should contain passage content"
+    );
 }

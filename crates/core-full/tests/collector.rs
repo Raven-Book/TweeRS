@@ -1,6 +1,6 @@
 // Integration tests for FileCollector
-use tweers_core_full::io::{FileCollector, SupportFileFilter};
 use std::path::PathBuf;
+use tweers_core_full::io::{FileCollector, SupportFileFilter};
 
 #[tokio::test]
 async fn test_collect_twee_files() {
@@ -21,5 +21,7 @@ async fn test_collect_twee_files() {
 
     // Should find .twee and .tw files
     assert!(!files.is_empty());
-    assert!(files.iter().any(|f| f.extension().and_then(|e| e.to_str()) == Some("twee")));
+    assert!(files
+        .iter()
+        .any(|f| f.extension().and_then(|e| e.to_str()) == Some("twee")));
 }

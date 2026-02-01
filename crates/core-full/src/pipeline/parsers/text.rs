@@ -2,7 +2,7 @@ use super::r#trait::FileParser;
 /// Text file parser (JS/CSS)
 use async_trait::async_trait;
 use indexmap::IndexMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::Result;
 
@@ -28,7 +28,7 @@ impl FileParser for TextFileParser {
 
     async fn parse(
         &self,
-        file_path: &PathBuf,
+        file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)> {
         let content = tokio::fs::read_to_string(file_path).await?;
         let passage_name = file_path.to_string_lossy().to_string();

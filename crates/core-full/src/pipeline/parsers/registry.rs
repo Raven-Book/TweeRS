@@ -5,7 +5,7 @@ use super::r#trait::FileParser;
 use super::text::TextFileParser;
 use super::twee::TweeFileParser;
 use indexmap::IndexMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::{Result, TweersError};
 
@@ -32,7 +32,7 @@ impl FileParserRegistry {
 
     pub async fn parse(
         &self,
-        file_path: &PathBuf,
+        file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)> {
         let extension = file_path
             .extension()

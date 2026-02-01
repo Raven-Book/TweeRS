@@ -2,7 +2,7 @@ use super::r#trait::FileParser;
 /// Twee file parser
 use async_trait::async_trait;
 use indexmap::IndexMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tweers_core::core::parser::TweeParser;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::{Result, TweersError};
@@ -17,7 +17,7 @@ impl FileParser for TweeFileParser {
 
     async fn parse(
         &self,
-        file_path: &PathBuf,
+        file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)> {
         let content = tokio::fs::read_to_string(file_path).await?;
         TweeParser::parse(&content).map_err(|e| {

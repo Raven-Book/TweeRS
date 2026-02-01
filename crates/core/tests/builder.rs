@@ -1,8 +1,8 @@
 // Unit tests for PipelineBuilder
-use tweers_core::pipeline::{NodeRegistry, PipelineBuilder, PipeMap, PipeNode};
-use tweers_core::error::Result;
 use async_trait::async_trait;
 use std::sync::Arc;
+use tweers_core::error::Result;
+use tweers_core::pipeline::{NodeRegistry, PipeMap, PipeNode, PipelineBuilder};
 
 struct TestNode {
     name: String,
@@ -53,8 +53,7 @@ fn test_builder_add_node_success() {
     });
 
     let registry = Arc::new(registry);
-    let result = PipelineBuilder::new("test", registry)
-        .add_node("node1");
+    let result = PipelineBuilder::new("test", registry).add_node("node1");
 
     assert!(result.is_ok());
 }
@@ -64,8 +63,7 @@ fn test_builder_add_nonexistent_node() {
     let registry = NodeRegistry::new();
     let registry = Arc::new(registry);
 
-    let result = PipelineBuilder::new("test", registry)
-        .add_node("nonexistent");
+    let result = PipelineBuilder::new("test", registry).add_node("nonexistent");
 
     assert!(result.is_err());
 }

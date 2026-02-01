@@ -89,7 +89,11 @@ async fn load_url(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let response = reqwest::get(url).await?;
     let content = response.text().await?;
-    let name = url.split('/').last().unwrap_or("downloaded").to_string();
+    let name = url
+        .split('/')
+        .next_back()
+        .unwrap_or("downloaded")
+        .to_string();
     texts.push((name, content));
     Ok(())
 }
