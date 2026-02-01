@@ -111,7 +111,7 @@ jobs:
       - name: Flatten artifacts directory
         run: |
           mkdir -p artifacts-flat
-          find artifacts -type f -name "*.tar.gz" -o -name "*.zip" | while read file; do
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read file; do
             cp "$file" artifacts-flat/
           done
           rm -rf artifacts
