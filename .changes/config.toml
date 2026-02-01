@@ -16,6 +16,7 @@ resolver = "rust"
 [packages.tweers-cli]
 path = "crates/cli"
 resolver = "rust"
+assets = ["artifacts/*"]
 
 [packages.tweers-core]
 path = "crates/core"
