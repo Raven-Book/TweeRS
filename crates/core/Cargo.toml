@@ -4,6 +4,9 @@ version = "1.0.0"
 edition = "2024"
 publish = false
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 async-trait = "0.1.88"
 calamine = "0.30.0"
@@ -14,5 +17,14 @@ serde_json = "1.0.140"
 thiserror = "2.0.12"
 tracing = "0.1"
 
+# WASM dependencies (only when wasm feature is enabled)
+wasm-bindgen = { version = "0.2", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+
 [dev-dependencies]
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[features]
+default = []
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook"]

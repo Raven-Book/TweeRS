@@ -7,3 +7,7 @@ pub mod error;
 pub mod excel;
 pub mod pipeline;
 pub mod util;
+
+// WASM bindings (only compiled when wasm feature is enabled)
+#[cfg(feature = "wasm")]
+pub mod wasm;

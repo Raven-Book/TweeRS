@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TweeRS WASM Example</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                height: 100%;
+                overflow: hidden;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                background-color: #fafafa;
+                color: #2c2c2c;
+                font-size: 13px;
+            }
+
+            .app {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .titlebar {
+                height: 40px;
+                background-color: #ffffff;
+                display: flex;
+                align-items: center;
+                padding: 0 20px;
+                border-bottom: 1px solid #e5e5e5;
+            }
+
+            .titlebar-title {
+                font-size: 14px;
+                font-weight: 300;
+                color: #2c2c2c;
+                letter-spacing: -0.3px;
+            }
+
+            .main {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            .panel {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+                border-right: 1px solid #e5e5e5;
+            }
+
+            .panel:last-child {
+                border-right: none;
+            }
+
+            .panel-header {
+                height: 36px;
+                background-color: #f5f5f5;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 16px;
+                border-bottom: 1px solid #e5e5e5;
+            }
+
+            .panel-title {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: #666666;
+                font-weight: 500;
+            }
+
+            .panel-content {
+                flex: 1;
+                overflow: auto;
+                background-color: #ffffff;
+            }
+
+            .editor {
+                width: 100%;
+                height: 100%;
+                padding: 16px;
+                background-color: #ffffff;
+                color: #2c2c2c;
+                border: none;
+                outline: none;
+                resize: none;
+                font-family: "SF Mono", Monaco, Consolas, monospace;
+                font-size: 13px;
+                line-height: 1.6;
+            }
+
+            .btn {
+                background-color: #2c2c2c;
+                color: #ffffff;
+                padding: 8px 20px;
+                border: none;
+                border-radius: 2px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 400;
+                transition: background-color 0.15s ease;
+            }
+
+            .btn:hover {
+                background-color: #1a1a1a;
+            }
+
+            .btn:disabled {
+                background-color: #d4d4d4;
+                color: #999999;
+                cursor: not-allowed;
+            }
+
+            .message {
+                padding: 10px 16px;
+                font-size: 12px;
+                margin-top: 12px;
+                border-radius: 2px;
+            }
+
+            .message.error {
+                background-color: #fef2f2;
+                color: #b91c1c;
+                border-left: 3px solid #b91c1c;
+            }
+
+            .message.success {
+                background-color: #f0fdf4;
+                color: #166534;
+                border-left: 3px solid #22c55e;
+            }
+
+            .output-frame {
+                width: 100%;
+                height: 100%;
+                border: none;
+                background-color: #ffffff;
+            }
+
+            .toolbar {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal-overlay.show {
+                display: flex;
+            }
+
+            .modal {
+                background-color: #ffffff;
+                border-radius: 2px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                max-width: 500px;
+                width: 90%;
+            }
+
+            .modal-header {
+                padding: 20px 24px;
+                border-bottom: 1px solid #e5e5e5;
+            }
+
+            .modal-title {
+                font-size: 14px;
+                font-weight: 500;
+                color: #2c2c2c;
+            }
+
+            .modal-body {
+                padding: 24px;
+                font-size: 13px;
+                line-height: 1.6;
+                color: #666666;
+            }
+
+            .modal-footer {
+                padding: 16px 24px;
+                border-top: 1px solid #e5e5e5;
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+
+            .btn-secondary {
+                background-color: #f5f5f5;
+                color: #2c2c2c;
+            }
+
+            .btn-secondary:hover {
+                background-color: #e5e5e5;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <div class="titlebar">
+                <span class="titlebar-title">TweeRS WASM Example</span>
+            </div>
+            <div class="main">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Editor</span>
+                        <div class="toolbar">
+                            <button
+                                class="btn"
+                                id="buildBtn"
+                                onclick="buildStory()"
+                            >
+                                Build
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <textarea
+                            class="editor"
+                            id="tweeInput"
+                            placeholder="Enter Twee code..."
+                        >
+:: StoryTitle
+My First Story
+
+:: StoryData
+{
+  "ifid": "8A4C850D-1FA3-4EFA-AD10-1AD05DC71E4D",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: Start
+This is the start of chapter 1.
+
+[[Continue->Chapter1Next]]
+
+:: Chapter1Next
+This is the next part of chapter 1.
+
+[[Back to start->Start]]</textarea
+                        >
+                        <div
+                            id="message"
+                            class="message"
+                            style="display: none"
+                        ></div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Preview</span>
+                    </div>
+                    <div class="panel-content">
+                        <iframe id="outputFrame" class="output-frame"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 -->
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <div class="modal-title" id="modalTitle">警告</div>
+                </div>
+                <div class="modal-body" id="modalBody"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">
+                        取消
+                    </button>
+                    <button class="btn" id="modalConfirmBtn">继续</button>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            // 导入 WASM 模块
+            import init, {
+                parse,
+                build_from_parsed,
+            } from "./wasm/tweers_core.js";
+
+            let wasmInitialized = false;
+
+            // 显示模态框
+            window.showModal = function (title, message, onConfirm) {
+                const overlay = document.getElementById("modalOverlay");
+                const modalTitle = document.getElementById("modalTitle");
+                const modalBody = document.getElementById("modalBody");
+                const confirmBtn = document.getElementById("modalConfirmBtn");
+
+                modalTitle.textContent = title;
+                modalBody.textContent = message;
+                overlay.classList.add("show");
+
+                // 移除旧的事件监听器
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+                // 添加新的事件监听器
+                newConfirmBtn.addEventListener("click", () => {
+                    closeModal();
+                    if (onConfirm) onConfirm();
+                });
+            };
+
+            // 关闭模态框
+            window.closeModal = function () {
+                const overlay = document.getElementById("modalOverlay");
+                overlay.classList.remove("show");
+            };
+
+            // 初始化 WASM
+            async function initWasm() {
+                try {
+                    await init();
+                    wasmInitialized = true;
+                    console.log("WASM 模块初始化成功");
+                } catch (error) {
+                    console.error("WASM 初始化失败:", error);
+                    showMessage("WASM 初始化失败: " + error, "error");
+                }
+            }
+
+            // 显示消息
+            function showMessage(text, type = "success") {
+                const messageDiv = document.getElementById("message");
+                messageDiv.textContent = text;
+                messageDiv.className = "message " + type;
+                messageDiv.style.display = "block";
+            }
+
+            // 隐藏消息
+            function hideMessage() {
+                const messageDiv = document.getElementById("message");
+                messageDiv.style.display = "none";
+            }
+
+            // 执行实际构建的函数
+            async function performBuild(parsed, formatInfo, formatSource) {
+                showMessage("正在构建 HTML...", "success");
+
+                const buildFormatInfo = {
+                    name: formatInfo.name || "SugarCube",
+                    version: formatInfo.version,
+                    source: formatSource,
+                };
+
+                const output = build_from_parsed(
+                    parsed,
+                    buildFormatInfo,
+                    false,
+                );
+
+                // 显示结果
+                const iframe = document.getElementById("outputFrame");
+                iframe.srcdoc = output.html;
+
+                showMessage("构建成功！", "success");
+            }
+
+            // 构建故事的函数
+            window.buildStory = async function () {
+                if (!wasmInitialized) {
+                    showMessage("正在初始化 WASM...", "success");
+                    await initWasm();
+                }
+
+                const buildBtn = document.getElementById("buildBtn");
+                buildBtn.disabled = true;
+                showMessage("正在解析...", "success");
+
+                try {
+                    const tweeContent =
+                        document.getElementById("tweeInput").value;
+
+                    // 加载故事格式
+                    const formatResponse = await fetch(
+                        "./story-format/sugarcube-2.37.3/format.js",
+                    );
+                    const formatSource = await formatResponse.text();
+
+                    // 执行 format.js 来获取故事格式信息
+                    let formatInfo = null;
+                    window.storyFormat = function (data) {
+                        formatInfo = data;
+                    };
+                    eval(formatSource);
+
+                    if (!formatInfo) {
+                        throw new Error("无法从 format.js 中获取故事格式信息");
+                    }
+
+                    // 第一步：解析配置
+                    const parseConfig = {
+                        sources: [
+                            {
+                                type: "text",
+                                name: "story.twee",
+                                content: tweeContent,
+                            },
+                        ],
+                        format_info: {
+                            name: formatInfo.name || "SugarCube",
+                            version: formatInfo.version,
+                            source: formatSource,
+                        },
+                        is_debug: false,
+                    };
+
+                    // 调用 parse 函数
+                    const parsed = parse(parseConfig);
+                    console.log("解析结果:", parsed);
+
+                    // 验证故事格式和版本号
+                    showMessage("正在验证格式...", "success");
+
+                    if (parsed.story_data.format !== formatInfo.name) {
+                        // 显示格式不匹配警告，等待用户确认
+                        const message = `故事格式不匹配！\n\nStoryData 中的格式是 "${parsed.story_data.format}"，但 format.js 中的格式是 "${formatInfo.name}"。\n\n是否继续构建？`;
+
+                        buildBtn.disabled = false;
+
+                        showModal("格式不匹配警告", message, async () => {
+                            buildBtn.disabled = true;
+                            try {
+                                await performBuild(parsed, formatInfo, formatSource);
+                            } catch (error) {
+                                console.error("构建失败:", error);
+                                showMessage("构建失败: " + error, "error");
+                            } finally {
+                                buildBtn.disabled = false;
+                            }
+                        });
+                        return;
+                    }
+
+                    if (
+                        parsed.story_data.format_version !== formatInfo.version
+                    ) {
+                        // 显示版本不匹配警告，等待用户确认
+                        const message = `版本号不匹配！\n\nStoryData 中的版本是 "${parsed.story_data.format_version}"，但 format.js 中的版本是 "${formatInfo.version}"。\n\n是否继续构建？`;
+
+                        buildBtn.disabled = false;
+
+                        showModal("版本不匹配警告", message, async () => {
+                            buildBtn.disabled = true;
+                            try {
+                                await performBuild(parsed, formatInfo, formatSource);
+                            } catch (error) {
+                                console.error("构建失败:", error);
+                                showMessage("构建失败: " + error, "error");
+                            } finally {
+                                buildBtn.disabled = false;
+                            }
+                        });
+                        return;
+                    }
+
+                    // 第二步：从解析结果构建 HTML
+                    await performBuild(parsed, formatInfo, formatSource);
+                } catch (error) {
+                    console.error("构建失败:", error);
+                    showMessage("构建失败: " + error, "error");
+                } finally {
+                    buildBtn.disabled = false;
+                }
+            };
+
+            // 页面加载时初始化 WASM
+            initWasm();
+        </script>
+    </body>
+</html>

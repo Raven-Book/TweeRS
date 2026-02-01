@@ -1,6 +1,7 @@
 // Stable API facade for external consumers - Pure logic, no I/O
 
-use crate::core::story::StoryData;
+use crate::core::story::{Passage, StoryData, StoryFormat};
+use indexmap::IndexMap;
 
 pub type Error = Box<dyn std::error::Error>;
 
@@ -97,6 +98,13 @@ impl BuildConfig {
     }
 }
 
+/// Parse output - contains parsed passages and story data
+#[derive(Clone, Debug)]
+pub struct ParseOutput {
+    pub passages: IndexMap<String, Passage>,
+    pub story_data: StoryData,
+}
+
 /// Build output - returns HTML as string
 #[derive(Clone, Debug)]
 pub struct BuildOutput {
@@ -104,28 +112,31 @@ pub struct BuildOutput {
     pub story_data: StoryData,
 }
 
-/// Pure build function - no I/O (synchronous)
-pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
-    use crate::core::output::HtmlOutputHandler;
+/// Configuration for building from parsed data
+#[derive(Clone, Debug)]
+pub struct BuildFromParsedConfig {
+    pub passages: IndexMap<String, Passage>,
+    pub story_data: StoryData,
+    pub format_info: StoryFormatInfo,
+    pub is_debug: bool,
+}
+
+/// Helper function to parse sources into passages and story data
+fn parse_sources(
+    sources: &[InputSource],
+) -> Result<(IndexMap<String, Passage>, StoryData), Box<dyn std::error::Error + Send + Sync>> {
     use crate::core::parser::TweeParser;
-    use crate::core::story::StoryFormat;
-    use indexmap::IndexMap;
 
-    // Parse story format
-    let story_format = StoryFormat::parse(&config.format_info.source)?;
-
-    // Parse all sources
     let mut all_passages = IndexMap::new();
     let mut story_data = None;
 
-    for source in &config.sources {
+    for source in sources {
         match source {
             InputSource::Text { name: _, content } => {
                 let (passages, data) = TweeParser::parse(content)?;
                 for (passage_name, passage) in passages {
                     all_passages.insert(passage_name, passage);
                 }
-                // Use the first non-None StoryData found
                 if data.is_some() && story_data.is_none() {
                     story_data = data;
                 }
@@ -135,7 +146,6 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
                 data,
                 mime_type: _,
             } => {
-                // Handle bytes (e.g., Excel files)
                 if let Some(ext) = std::path::Path::new(name).extension()
                     && let Some(ext_str) = ext.to_str()
                     && matches!(ext_str, "xlsx" | "xlsm" | "xlsb" | "xls")
@@ -144,7 +154,7 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
                     let result = ExcelParser::parse_from_bytes(data.clone())?;
 
                     if !result.javascript.is_empty() {
-                        let passage = crate::core::story::Passage {
+                        let passage = Passage {
                             name: name.clone(),
                             tags: Some("init script".to_string()),
                             position: None,
@@ -159,17 +169,59 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
     }
 
     let final_story_data = story_data.ok_or("StoryData is required")?;
+    Ok((all_passages, final_story_data))
+}
 
-    // Generate HTML (synchronous)
+/// Pure build function - no I/O (synchronous)
+pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
+    use crate::core::output::HtmlOutputHandler;
+
+    // Parse story format
+    let story_format = StoryFormat::parse(&config.format_info.source)?;
+
+    // Parse all sources
+    let (passages, story_data) = parse_sources(&config.sources)?;
+
+    // Generate HTML
     let html = HtmlOutputHandler::generate_html(
-        &all_passages,
-        &Some(final_story_data.clone()),
+        &passages,
+        &Some(story_data.clone()),
+        &story_format,
+        config.is_debug,
+    )?;
+
+    Ok(BuildOutput { html, story_data })
+}
+
+/// Parse sources without building HTML
+pub fn parse(config: BuildConfig) -> Result<ParseOutput, Box<dyn std::error::Error + Send + Sync>> {
+    let (passages, story_data) = parse_sources(&config.sources)?;
+    Ok(ParseOutput {
+        passages,
+        story_data,
+    })
+}
+
+/// Build HTML from already parsed data
+pub fn build_from_parsed(
+    config: BuildFromParsedConfig,
+) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
+    use crate::core::output::HtmlOutputHandler;
+    use crate::core::story::StoryFormat;
+
+    // Parse story format
+    let story_format = StoryFormat::parse(&config.format_info.source)?;
+
+    // Generate HTML
+    let html = HtmlOutputHandler::generate_html(
+        &config.passages,
+        &Some(config.story_data.clone()),
         &story_format,
         config.is_debug,
     )?;
 
     Ok(BuildOutput {
         html,
-        story_data: final_story_data,
+        story_data: config.story_data,
     })
 }
