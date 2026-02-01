@@ -2,13 +2,13 @@ name: Test
 on:
   push:
     paths:
-      - 'src/**'
+      - 'crates/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/test.yml'
   pull_request:
     paths:
-      - 'src/**'
+      - 'crates/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/test.yml'
