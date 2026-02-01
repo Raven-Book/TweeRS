@@ -28,3 +28,6 @@ references/**
 # TweeRS log files
 logs/
 *.log
+
+# TweeRS artifacts
+artifacts/
