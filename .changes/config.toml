@@ -1,0 +1,48 @@
+[branches]
+base = "master"
+release = "release"
+
+[tags]
+chore = "Chores"
+feat = "New Features"
+fix = "Bug Fixes"
+perf = "Performance Improvements"
+refactor = "Refactors"
+
+[packages.tweers-asset]
+path = "crates/asset"
+resolver = "rust"
+
+[packages.tweers-cli]
+path = "crates/cli"
+resolver = "rust"
+
+[packages.tweers-core]
+path = "crates/core"
+resolver = "rust"
+
+[packages.tweers-core-full]
+path = "crates/core-full"
+resolver = "rust"
+
+[packages.tweers-js]
+path = "crates/js"
+resolver = "rust"
+
+[resolver.rust.pre-check]
+url = "https://crates.io/api/v1/crates/{{ package.name }}/{{ package.version }}"
+
+[resolver.rust.pre-check.extra-headers]
+User-Agent = "Semifold 0.2.13"
+
+[[resolver.rust.publish]]
+command = "cargo"
+args = ["publish"]
+
+[[resolver.rust.post-version]]
+command = "cargo"
+args = [
+    "generate-lockfile",
+    "--offline",
+]
+dry_run = true
