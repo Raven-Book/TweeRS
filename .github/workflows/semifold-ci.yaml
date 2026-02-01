@@ -108,6 +108,12 @@ jobs:
           pattern: "tweers-*"
           merge-multiple: false
 
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Cache dependencies
+        run: cargo fetch --locked
+
       - name: Setup Semifold
         uses: noctisynth/setup-semifold@main
 
