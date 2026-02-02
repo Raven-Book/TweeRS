@@ -1,1 +1,8 @@
-["index", "quick-start", "excel", "scripts"]
+[
+  { "type": "file", "name": "index", "label": "介绍" },
+  { "type": "file", "name": "concepts", "label": "核心概念" },
+  { "type": "file", "name": "installation", "label": "安装" },
+  { "type": "file", "name": "quick-start", "label": "快速开始" },
+  { "type": "file", "name": "excel", "label": "扩展功能: 数据表" },
+  { "type": "file", "name": "scripts", "label": "扩展功能: 脚本注入" }
+]

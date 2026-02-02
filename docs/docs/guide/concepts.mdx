@@ -1,0 +1,66 @@
+# 核心概念
+
+import { TweePlayground } from '@/components';
+
+## 段落
+
+互动小说由「段落」组成。玩家通过选择跳转到不同段落。
+
+## Twee 语法
+
+用 `::` 定义段落，用 `[[]]` 创建链接。试试编辑下面的代码：
+
+<TweePlayground code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Hello World
+
+:: Start
+你站在岔路口。
+
+[[向左->Left]]
+[[向右->Right]]
+
+:: Left
+你发现了一座城堡。
+[[返回->Start]]
+
+:: Right
+你来到了森林。
+[[返回->Start]]
+`} />
+
+**基础说明：**
+
+- `:: StoryTitle` — 设置故事标题为「Hello World」
+- `:: Start` — 定义名为 Start 的段落
+- `[[森林]]` — 链接到「森林」段落
+- `[[进入森林->Forest]]` — 显示「进入森林」，跳转到 Forest
+
+## 故事格式
+
+故事格式决定游戏的外观和可用功能。TweeRS 支持：
+
+- **Snowman** — 极简框架，适合熟悉 JS 的开发者
+- **SugarCube** — 功能丰富，适合复杂游戏
+- **Chapbook** — 适合纯文字叙事
+
+在 `.twee` 文件开头指定：
+
+```twee
+:: StoryData
+{
+  "ifid": "your-uuid-here",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+```
+
+:::tip
+不确定选哪个？推荐 SugarCube，社区资源最多。
+:::

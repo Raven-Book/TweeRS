@@ -99,10 +99,14 @@ impl BuildConfig {
 }
 
 /// Parse output - contains parsed passages and story data
+/// Can be directly used with build_from_parsed after setting format_info.source
 #[derive(Clone, Debug)]
 pub struct ParseOutput {
     pub passages: IndexMap<String, Passage>,
     pub story_data: StoryData,
+    /// Format info with empty source - needs to be filled before building
+    pub format_info: StoryFormatInfo,
+    pub is_debug: bool,
 }
 
 /// Build output - returns HTML as string
@@ -194,34 +198,46 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
 }
 
 /// Parse sources without building HTML
-pub fn parse(config: BuildConfig) -> Result<ParseOutput, Box<dyn std::error::Error + Send + Sync>> {
-    let (passages, story_data) = parse_sources(&config.sources)?;
+pub fn parse(
+    sources: Vec<InputSource>,
+) -> Result<ParseOutput, Box<dyn std::error::Error + Send + Sync>> {
+    let (passages, story_data) = parse_sources(&sources)?;
+
+    // Extract format info from story_data and create empty source
+    let format_info = StoryFormatInfo {
+        name: story_data.format.clone(),
+        version: story_data.format_version.clone(),
+        source: String::new(), // Empty source - to be filled by caller
+    };
+
     Ok(ParseOutput {
         passages,
         story_data,
+        format_info,
+        is_debug: false, // Default to false, can be set later
     })
 }
 
 /// Build HTML from already parsed data
 pub fn build_from_parsed(
-    config: BuildFromParsedConfig,
+    parsed: ParseOutput,
 ) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
     use crate::core::output::HtmlOutputHandler;
     use crate::core::story::StoryFormat;
 
     // Parse story format
-    let story_format = StoryFormat::parse(&config.format_info.source)?;
+    let story_format = StoryFormat::parse(&parsed.format_info.source)?;
 
     // Generate HTML
     let html = HtmlOutputHandler::generate_html(
-        &config.passages,
-        &Some(config.story_data.clone()),
+        &parsed.passages,
+        &Some(parsed.story_data.clone()),
         &story_format,
-        config.is_debug,
+        parsed.is_debug,
     )?;
 
     Ok(BuildOutput {
         html,
-        story_data: config.story_data,
+        story_data: parsed.story_data,
     })
 }

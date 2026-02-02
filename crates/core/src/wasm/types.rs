@@ -29,7 +29,8 @@ pub struct JsStoryFormatInfo {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsBuildConfig {
     pub sources: Vec<JsInputSource>,
-    pub format_info: JsStoryFormatInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_info: Option<JsStoryFormatInfo>,
     #[serde(default)]
     pub is_debug: bool,
     pub start_passage: Option<String>,
@@ -51,10 +52,10 @@ pub struct JsStoryData {
     pub name: Option<String>,
     pub ifid: String,
     pub format: String,
-    #[serde(alias = "format-version")]
+    #[serde(rename = "format-version")]
     pub format_version: String,
     pub start: Option<String>,
-    #[serde(alias = "tag-colors")]
+    #[serde(rename = "tag-colors")]
     pub tag_colors: Option<std::collections::HashMap<String, String>>,
     pub zoom: Option<f32>,
 }
@@ -64,6 +65,8 @@ pub struct JsStoryData {
 pub struct JsParseOutput {
     pub passages: std::collections::HashMap<String, JsPassage>,
     pub story_data: JsStoryData,
+    pub format_info: JsStoryFormatInfo,
+    pub is_debug: bool,
 }
 
 /// JavaScript-friendly build output
@@ -121,7 +124,15 @@ impl From<JsStoryFormatInfo> for crate::api::StoryFormatInfo {
 
 impl From<JsBuildConfig> for crate::api::BuildConfig {
     fn from(js_config: JsBuildConfig) -> Self {
-        let format_info = js_config.format_info.into();
+        // Use a dummy format_info if not provided (for parse-only operations)
+        let format_info = js_config.format_info
+            .map(|info| info.into())
+            .unwrap_or_else(|| crate::api::StoryFormatInfo {
+                name: String::new(),
+                version: String::new(),
+                source: String::new(),
+            });
+
         let sources: Vec<crate::api::InputSource> =
             js_config.sources.into_iter().map(|s| s.into()).collect();
 
@@ -195,6 +206,12 @@ impl From<crate::api::ParseOutput> for JsParseOutput {
         JsParseOutput {
             passages,
             story_data: parse_output.story_data.into(),
+            format_info: JsStoryFormatInfo {
+                name: parse_output.format_info.name,
+                version: parse_output.format_info.version,
+                source: parse_output.format_info.source,
+            },
+            is_debug: parse_output.is_debug,
         }
     }
 }

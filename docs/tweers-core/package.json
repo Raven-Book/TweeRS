@@ -1,0 +1,17 @@
+{
+  "name": "tweers-core",
+  "type": "module",
+  "version": "1.0.0",
+  "files": [
+    "tweers_core_bg.wasm",
+    "tweers_core.js",
+    "tweers_core_bg.js",
+    "tweers_core.d.ts"
+  ],
+  "main": "tweers_core.js",
+  "types": "tweers_core.d.ts",
+  "sideEffects": [
+    "./tweers_core.js",
+    "./snippets/*"
+  ]
+}

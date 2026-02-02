@@ -1,6 +1,6 @@
 // WASM API bindings - JavaScript-callable functions
 
-use super::types::{JsBuildConfig, JsBuildOutput, JsParseOutput, JsStoryFormatInfo};
+use super::types::{JsBuildConfig, JsBuildOutput, JsParseOutput};
 use wasm_bindgen::prelude::*;
 
 /// Build a Twee story from the given configuration
@@ -33,24 +33,26 @@ pub fn build(config_js: JsValue) -> Result<JsBuildOutput, JsValue> {
 /// Parse Twee sources without building HTML
 ///
 /// # Arguments
-/// * `config_js` - JavaScript object containing build configuration
+/// * `sources_js` - JavaScript array of input sources
 ///
 /// # Returns
-/// * `JsValue` - Contains passages and story data as JSON
+/// * `JsValue` - Contains passages, story data, and format info (with empty source)
 ///
 /// # Errors
 /// Returns a JsValue error if parsing fails
 #[wasm_bindgen]
-pub fn parse(config_js: JsValue) -> Result<JsValue, JsValue> {
-    // Convert JS value to Rust type
-    let js_config: JsBuildConfig = serde_wasm_bindgen::from_value(config_js)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse config: {}", e)))?;
+pub fn parse(sources_js: JsValue) -> Result<JsValue, JsValue> {
+    use super::types::JsInputSource;
 
-    // Convert to internal API type
-    let config: crate::api::BuildConfig = js_config.into();
+    // Convert JS value to sources array
+    let js_sources: Vec<JsInputSource> = serde_wasm_bindgen::from_value(sources_js)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse sources: {}", e)))?;
+
+    // Convert to internal API types
+    let sources: Vec<crate::api::InputSource> = js_sources.into_iter().map(|s| s.into()).collect();
 
     // Call the core parse function
-    let output = crate::api::parse(config)
+    let output = crate::api::parse(sources)
         .map_err(|e| JsValue::from_str(&format!("Parse failed: {}", e)))?;
 
     // Convert output to JS-friendly type
@@ -64,9 +66,7 @@ pub fn parse(config_js: JsValue) -> Result<JsValue, JsValue> {
 /// Build HTML from already parsed data
 ///
 /// # Arguments
-/// * `parsed_js` - JavaScript object containing parsed passages and story data
-/// * `format_info_js` - JavaScript object containing story format info
-/// * `is_debug` - Whether to build in debug mode
+/// * `parsed_js` - JavaScript object containing parsed passages, story data, and format info
 ///
 /// # Returns
 /// * `JsBuildOutput` - Contains the generated HTML
@@ -76,17 +76,12 @@ pub fn parse(config_js: JsValue) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn build_from_parsed(
     parsed_js: JsValue,
-    format_info_js: JsValue,
-    is_debug: bool,
 ) -> Result<JsBuildOutput, JsValue> {
     use indexmap::IndexMap;
 
-    // Parse JS values
+    // Parse JS value
     let js_parsed: JsParseOutput = serde_wasm_bindgen::from_value(parsed_js)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse parsed data: {}", e)))?;
-
-    let js_format_info: JsStoryFormatInfo = serde_wasm_bindgen::from_value(format_info_js)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse format info: {}", e)))?;
 
     // Convert passages from HashMap to IndexMap
     let passages: IndexMap<String, crate::core::story::Passage> = js_parsed
@@ -95,22 +90,16 @@ pub fn build_from_parsed(
         .map(|(k, v)| (k, v.into()))
         .collect();
 
-    // Convert story data
-    let story_data: crate::core::story::StoryData = js_parsed.story_data.into();
-
-    // Convert format info
-    let format_info: crate::api::StoryFormatInfo = js_format_info.into();
-
-    // Create build config
-    let config = crate::api::BuildFromParsedConfig {
+    // Convert to ParseOutput
+    let parse_output = crate::api::ParseOutput {
         passages,
-        story_data,
-        format_info,
-        is_debug,
+        story_data: js_parsed.story_data.into(),
+        format_info: js_parsed.format_info.into(),
+        is_debug: js_parsed.is_debug,
     };
 
     // Call the core build function
-    let output = crate::api::build_from_parsed(config)
+    let output = crate::api::build_from_parsed(parse_output)
         .map_err(|e| JsValue::from_str(&format!("Build failed: {}", e)))?;
 
     // Convert output to JS-friendly type

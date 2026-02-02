@@ -14,4 +14,18 @@ export default defineConfig({
       },
     ],
   },
+  builderConfig: {
+    source: {
+      alias: {
+        '@': path.join(__dirname, 'src'),
+      },
+    },
+    tools: {
+      rspack: {
+        experiments: {
+          asyncWebAssembly: true,
+        },
+      },
+    },
+  },
 });

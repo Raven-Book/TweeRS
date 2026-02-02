@@ -92,6 +92,15 @@ rm -rf "../../$OUT_DIR"/*
 cp -r pkg/* "../../$OUT_DIR/"
 rm -rf pkg
 
+# Replace auto-generated TypeScript definitions with custom ones
+echo -e "${YELLOW}Replacing TypeScript definitions with custom types${NC}"
+if [ -f "src/wasm/tweers_core.d.ts" ]; then
+    cp src/wasm/tweers_core.d.ts "../../$OUT_DIR/tweers_core.d.ts"
+    echo -e "${GREEN}✓ Custom TypeScript definitions applied${NC}"
+else
+    echo -e "${YELLOW}⚠ Custom TypeScript definitions not found, using auto-generated${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}✓ Build completed successfully!${NC}"
 echo -e "Output directory: ${YELLOW}$OUT_DIR${NC}"
