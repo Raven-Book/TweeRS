@@ -1,0 +1,69 @@
+name: Manual Build
+on:
+  workflow_dispatch:
+
+env:
+  CLICOLOR_FORCE: 1
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build - Windows-x86_64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: x86_64-pc-windows-msvc
+          args: "--locked --release"
+          strip: true
+
+      - name: Build archive (Windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "archive"
+          if (Test-Path "LICENSE") { Copy-Item "LICENSE" "archive\" }
+          if (Test-Path "README.md") { Copy-Item "README.md" "archive\" }
+          if (Test-Path "test\story-format") { Copy-Item "test\story-format" "archive\" -Recurse }
+          Copy-Item "target\x86_64-pc-windows-msvc\release\tweers.exe" "archive\"
+
+          cd archive
+          if (Test-Path "story-format") {
+            Compress-Archive -Path LICENSE, README.md, story-format, tweers.exe -DestinationPath "tweers-windows-x86_64.zip" -CompressionLevel Optimal
+          } else {
+            Compress-Archive -Path LICENSE, README.md, tweers.exe -DestinationPath "tweers-windows-x86_64.zip" -CompressionLevel Optimal
+          }
+
+      - name: Build Windows Installer
+        shell: pwsh
+        run: |
+          # 复制 tweers.exe 到 installer 目录
+          Copy-Item "target\x86_64-pc-windows-msvc\release\tweers.exe" "installer\"
+
+          # 下载并安装 Inno Setup
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "innosetup-installer.exe"
+          Start-Process -FilePath ".\innosetup-installer.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+
+          # 编译安装包
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\tweers.iss"
+
+          # 移动安装包到 archive 目录
+          Move-Item "installer\Output\TweeRS-*-setup.exe" "archive\TweeRS-setup.exe"
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: tweers-windows-x86_64.zip
+          path: archive/tweers-windows-x86_64.zip
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: TweeRS-setup.exe
+          path: archive/TweeRS-setup.exe
