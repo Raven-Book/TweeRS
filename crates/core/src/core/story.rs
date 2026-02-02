@@ -1,7 +1,7 @@
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::format;
+
+use super::skip::skip;
 
 /// StoryData Passage
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,19 +85,23 @@ impl StoryData {
 
 impl StoryFormat {
     /// Parse format.js content to extract StoryFormat
+    /// Handles non-standard JSON that may contain JavaScript functions
     pub fn parse(content: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let re = Regex::new(r"window\.storyFormat\s*\(\s*(\{[\s\S]*}\s*)")?;
+        const KNOWN_FIELDS: &[&str] = &[
+            "name",
+            "version",
+            "proofing",
+            "source",
+            "author",
+            "description",
+            "image",
+            "url",
+            "license",
+        ];
 
-        if let Some(caps) = re.captures(content) {
-            let json = caps
-                .get(1)
-                .ok_or("Failed to extract story format json from regex match".to_string())?;
-            let json_str = json.as_str();
-            let story_format = serde_json::from_str(json_str)
-                .map_err(|e| format!("Failed to parse story format JSON: {e}"))?;
-            Ok(story_format)
-        } else {
-            Err("Could not find window.storyFormat(...) in format file".into())
-        }
+        let json_obj = skip(content, KNOWN_FIELDS)?;
+
+        serde_json::from_str(&json_obj)
+            .map_err(|e| format!("Failed to parse story format JSON: {e}").into())
     }
 }

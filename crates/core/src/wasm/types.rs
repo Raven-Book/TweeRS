@@ -125,7 +125,8 @@ impl From<JsStoryFormatInfo> for crate::api::StoryFormatInfo {
 impl From<JsBuildConfig> for crate::api::BuildConfig {
     fn from(js_config: JsBuildConfig) -> Self {
         // Use a dummy format_info if not provided (for parse-only operations)
-        let format_info = js_config.format_info
+        let format_info = js_config
+            .format_info
             .map(|info| info.into())
             .unwrap_or_else(|| crate::api::StoryFormatInfo {
                 name: String::new(),

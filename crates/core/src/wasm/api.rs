@@ -74,9 +74,7 @@ pub fn parse(sources_js: JsValue) -> Result<JsValue, JsValue> {
 /// # Errors
 /// Returns a JsValue error if the build fails
 #[wasm_bindgen]
-pub fn build_from_parsed(
-    parsed_js: JsValue,
-) -> Result<JsBuildOutput, JsValue> {
+pub fn build_from_parsed(parsed_js: JsValue) -> Result<JsBuildOutput, JsValue> {
     use indexmap::IndexMap;
 
     // Parse JS value
