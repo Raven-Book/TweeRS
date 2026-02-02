@@ -26,10 +26,7 @@ function generateIFID(): string {
 
 // 替换代码中的 IFID
 function replaceIFID(code: string): string {
-  return code.replace(
-    /"ifid":\s*"[A-F0-9-]+"/i,
-    `"ifid": "${generateIFID()}"`
-  );
+  return code.replace(/"ifid":\s*"[A-F0-9-]+"/i, `"ifid": "${generateIFID()}"`);
 }
 
 export function TweePlayground({ code, height = '280px' }: Props) {
@@ -48,7 +45,7 @@ export function TweePlayground({ code, height = '280px' }: Props) {
       return formatCache.current.get(key)!;
     }
 
-    const base = import.meta.env.BASE_URL || '/';
+    const base = import.meta.env.DEV ? '/' : '/TweeRS/';
     const path = `${base}story-format/${key}/format.js`;
 
     const response = await fetch(path);

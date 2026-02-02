@@ -15,7 +15,7 @@ export default defineConfig({
     ],
   },
   builderConfig: {
-    source: {
+    resolve: {
       alias: {
         '@': path.join(__dirname, 'src'),
       },
