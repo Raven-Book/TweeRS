@@ -13,6 +13,12 @@ interface FormatInfo {
   version: string;
 }
 
+interface AvailableFormat {
+  name: string;
+  version: string;
+  displayName: string;
+}
+
 // 生成 v4 UUID（大写字母）
 function generateIFID(): string {
   const hex = '0123456789ABCDEF';
@@ -29,22 +35,66 @@ function replaceIFID(code: string): string {
   return code.replace(/"ifid":\s*"[A-F0-9-]+"/i, `"ifid": "${generateIFID()}"`);
 }
 
+// 替换 StoryData 中的故事格式
+function replaceStoryFormat(code: string, name: string, version: string): string {
+  let result = code;
+  // 替换 format
+  result = result.replace(/"format":\s*"[^"]*"/i, `"format": "${name}"`);
+  // 替换 format-version
+  result = result.replace(/"format-version":\s*"[^"]*"/i, `"format-version": "${version}"`);
+  return result;
+}
+
+// 从代码中提取当前格式
+function getCurrentFormat(code: string): string {
+  const formatMatch = code.match(/"format":\s*"([^"]*)"/i);
+  const versionMatch = code.match(/"format-version":\s*"([^"]*)"/i);
+  if (formatMatch && versionMatch) {
+    return `${formatMatch[1].toLowerCase()}|${versionMatch[1]}`;
+  }
+  return '';
+}
+
 export function TweePlayground({ code, height = '280px' }: Props) {
   const [input, setInput] = useState(() => replaceIFID(code.trim()));
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [isDebug, setIsDebug] = useState(false);
-  const formatCache = useRef<Map<string, string>>(new Map());
+  const [availableFormats, setAvailableFormats] = useState<AvailableFormat[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // 扫描可用的故事格式
+  async function scanAvailableFormats(): Promise<AvailableFormat[]> {
+    const base = import.meta.env.DEV ? '/' : '/TweeRS/';
+    const knownFormats = [
+      { name: 'harlowe', version: '4-unstable' },
+      { name: 'sugarcube', version: '2.37.3' },
+    ];
+
+    const formats: AvailableFormat[] = [];
+    for (const format of knownFormats) {
+      const key = `${format.name.toLowerCase()}-${format.version}`;
+      const path = `${base}story-format/${key}/format.js`;
+
+      try {
+        const response = await fetch(path, { method: 'HEAD' });
+        if (response.ok) {
+          formats.push({
+            name: format.name,
+            version: format.version,
+            displayName: `${format.name.charAt(0).toUpperCase() + format.name.slice(1)} ${format.version}`,
+          });
+        }
+      } catch (e) {
+        // 格式不存在，跳过
+      }
+    }
+    return formats;
+  }
 
   // 加载故事格式文件
   async function loadFormat(formatInfo: FormatInfo): Promise<string> {
     const key = `${formatInfo.name.toLowerCase()}-${formatInfo.version}`;
-
-    if (formatCache.current.has(key)) {
-      return formatCache.current.get(key)!;
-    }
-
     const base = import.meta.env.DEV ? '/' : '/TweeRS/';
     const path = `${base}story-format/${key}/format.js`;
 
@@ -53,9 +103,7 @@ export function TweePlayground({ code, height = '280px' }: Props) {
       throw new Error(`无法加载格式文件: ${path}`);
     }
 
-    const text = await response.text();
-    formatCache.current.set(key, text);
-    return text;
+    return await response.text();
   }
 
   // 构建 HTML
@@ -68,16 +116,18 @@ export function TweePlayground({ code, height = '280px' }: Props) {
         { type: 'text', name: 'story.twee', content: source },
       ]);
 
-      // 从解析结果中获取格式信息
+      // 从 story_data 中获取格式信息
       const formatInfo: FormatInfo = {
-        name: parsed.format_info.name,
-        version: parsed.format_info.version,
+        name: parsed.story_data.format,
+        version: parsed.story_data['format-version'],
       };
 
       // 加载对应的格式文件
       const formatSource = await loadFormat(formatInfo);
 
-      // 填充 format_info.source 和 is_debug
+      // 填充 format_info
+      parsed.format_info.name = formatInfo.name;
+      parsed.format_info.version = formatInfo.version;
       parsed.format_info.source = formatSource;
       parsed.is_debug = useDebug;
 
@@ -91,6 +141,23 @@ export function TweePlayground({ code, height = '280px' }: Props) {
       setError(String(e));
     }
   }
+
+  // 切换故事格式
+  function handleFormatChange(formatKey: string) {
+    if (!formatKey) return;
+
+    const [name, version] = formatKey.split('|');
+    const newInput = replaceStoryFormat(input, name, version);
+    setInput(newInput);
+    build(newInput).catch((err) => setError(String(err)));
+  }
+
+  // 初始化：扫描可用格式
+  useEffect(() => {
+    scanAvailableFormats().then((formats) => {
+      setAvailableFormats(formats);
+    });
+  }, []);
 
   // 初始化：构建初始代码
   useEffect(() => {
@@ -144,6 +211,15 @@ export function TweePlayground({ code, height = '280px' }: Props) {
       color: '#fff',
       borderColor: '#2c2c2c',
     } as const,
+    select: {
+      height: '28px',
+      padding: '0 8px',
+      background: '#f5f5f5',
+      border: '1px solid #e5e5e5',
+      borderRadius: '4px',
+      fontSize: '12px',
+      cursor: 'pointer',
+    } as const,
   };
 
   return (
@@ -155,6 +231,23 @@ export function TweePlayground({ code, height = '280px' }: Props) {
           style={styles.textarea}
         />
         <div style={styles.toolbar}>
+          {availableFormats.length > 0 && (
+            <select
+              value={getCurrentFormat(input)}
+              onChange={(e) => handleFormatChange(e.target.value)}
+              style={styles.select}
+              title="选择故事格式"
+            >
+              {availableFormats.map((format) => (
+                <option
+                  key={`${format.name}|${format.version}`}
+                  value={`${format.name}|${format.version}`}
+                >
+                  {format.displayName}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             onClick={() => {
               const newDebug = !isDebug;

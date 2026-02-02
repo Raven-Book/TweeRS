@@ -174,6 +174,12 @@ function debugString(val) {
     // TODO we could test for more things here, like `Set`s and `Map`s.
     return className;
 }
+/**
+ * Initialize panic hook for better error messages in browser console
+ */
+export function init_panic_hook() {
+    wasm.init_panic_hook();
+}
 
 function takeFromExternrefTable0(idx) {
     const value = wasm.__wbindgen_export_4.get(idx);
@@ -244,13 +250,6 @@ export function build_from_parsed(parsed_js) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return JsBuildOutput.__wrap(ret[0]);
-}
-
-/**
- * Initialize panic hook for better error messages in browser console
- */
-export function init_panic_hook() {
-    wasm.init_panic_hook();
 }
 
 const JsBuildOutputFinalization = (typeof FinalizationRegistry === 'undefined')
