@@ -6,35 +6,6 @@ use std::str::Chars;
 
 type ParseResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-/// Skip unknown fields and extract only known fields from window.storyFormat(...)
-pub fn skip(content: &str, known_fields: &[&str]) -> ParseResult<String> {
-    let start = content
-        .find("window.storyFormat")
-        .ok_or("Could not find window.storyFormat in format file")?;
-    let obj_start = content[start..]
-        .find('{')
-        .map(|i| start + i)
-        .ok_or("Could not find opening brace")?;
-
-    let fields = parse_js_object(&content[obj_start..])?;
-
-    let mut json_obj = String::from("{");
-    let mut first = true;
-
-    for key in known_fields {
-        if let Some(value) = fields.get(*key) {
-            if !first {
-                json_obj.push(',');
-            }
-            first = false;
-            json_obj.push_str(&format!("\"{}\":{}", key, value));
-        }
-    }
-    json_obj.push('}');
-
-    Ok(json_obj)
-}
-
 /// Parse a JS object and extract top-level key-value pairs
 pub fn parse_js_object(s: &str) -> ParseResult<HashMap<String, String>> {
     let mut result = HashMap::new();

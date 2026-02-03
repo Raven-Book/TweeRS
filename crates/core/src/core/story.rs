@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::skip::skip;
+use super::skip::parse_js_object;
 
 /// StoryData Passage
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -87,21 +87,30 @@ impl StoryFormat {
     /// Parse format.js content to extract StoryFormat
     /// Handles non-standard JSON that may contain JavaScript functions
     pub fn parse(content: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        const KNOWN_FIELDS: &[&str] = &[
-            "name",
-            "version",
-            "proofing",
-            "source",
-            "author",
-            "description",
-            "image",
-            "url",
-            "license",
-        ];
+        let start = content
+            .find("window.storyFormat")
+            .ok_or("Could not find window.storyFormat in format file")?;
+        let obj_start = content[start..]
+            .find('{')
+            .map(|i| start + i)
+            .ok_or("Could not find opening brace")?;
 
-        let json_obj = skip(content, KNOWN_FIELDS)?;
+        let fields = parse_js_object(&content[obj_start..])?;
 
-        serde_json::from_str(&json_obj)
-            .map_err(|e| format!("Failed to parse story format JSON: {e}").into())
+        let parse_str = |key: &str| -> Option<String> {
+            fields.get(key).and_then(|s| serde_json::from_str(s).ok())
+        };
+
+        Ok(StoryFormat {
+            name: parse_str("name"),
+            version: parse_str("version").ok_or("version is required")?,
+            proofing: fields.get("proofing").map(|s| s == "true").unwrap_or(false),
+            source: parse_str("source").ok_or("source is required")?,
+            author: parse_str("author"),
+            description: parse_str("description"),
+            image: parse_str("image"),
+            url: parse_str("url"),
+            license: parse_str("license"),
+        })
     }
 }
