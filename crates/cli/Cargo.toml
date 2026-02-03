@@ -1,6 +1,6 @@
 [package]
 name = "tweers-cli"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2024"
 publish = false
 
@@ -16,8 +16,8 @@ serde_json = "1.0.140"
 tokio = { version = "1.45.1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tweers-core = { path = "../core", version = "1.0.0" }
-tweers-core-full = { path = "../core-full", version = "1.0.0" }
+tweers-core = { path = "../core", version = "1.0.1" }
+tweers-core-full = { path = "../core-full", version = "1.0.1" }
 tweers-js = { path = "../js", version = "1.0.0" }
 tweers-asset = { path = "../asset", version = "1.0.0" }
 zip = "4.3.0"

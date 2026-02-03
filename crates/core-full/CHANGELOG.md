@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1
+
+### Performance Improvements
+
+- [`c9b3658`](https://github.com/Raven-Book/TweeRS/commit/c9b36584195e2f93885a0667b4f3d2990c7d99c4): Remove redundant JSON serialization when parsing story format
+
 ## v1.0.0
 
 ### Refactors
