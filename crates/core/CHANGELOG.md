@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.1
+
+### Performance Improvements
+
+- [`c9b3658`](https://github.com/Raven-Book/TweeRS/commit/c9b36584195e2f93885a0667b4f3d2990c7d99c4): Remove redundant JSON serialization when parsing story format
+
+### New Features
+
+- [`621a696`](https://github.com/Raven-Book/TweeRS/commit/621a69698eaa5e6f3e906db24062c4ed7112e89c): Add fallback mechanism for StoryFormat parsing to skip non-standard fields and support Harlowe format
+
 ## v1.0.0
 
 ### Refactors
