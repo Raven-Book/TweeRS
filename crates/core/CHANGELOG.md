@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2
+
+### Bug Fixes
+
+- [`563a497`](https://github.com/Raven-Book/TweeRS/commit/563a497908d04a14c89d33503137461fbbe86200): Unify file processing logic and fix sorting bug in WASM module that caused incorrect output
+
 ## v1.0.1
 
 ### Performance Improvements
