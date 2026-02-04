@@ -1,5 +1,6 @@
 // Stable API facade for external consumers - Pure logic, no I/O
 
+use crate::core::file::{aggregate_sources, parse_bytes_content, parse_text_content};
 use crate::core::story::{Passage, StoryData, StoryFormat};
 use indexmap::IndexMap;
 
@@ -129,51 +130,26 @@ pub struct BuildFromParsedConfig {
 fn parse_sources(
     sources: &[InputSource],
 ) -> Result<(IndexMap<String, Passage>, StoryData), Box<dyn std::error::Error + Send + Sync>> {
-    use crate::core::parser::TweeParser;
-
-    let mut all_passages = IndexMap::new();
-    let mut story_data = None;
+    let mut parsed_sources = Vec::new();
 
     for source in sources {
         match source {
-            InputSource::Text { name: _, content } => {
-                let (passages, data) = TweeParser::parse(content)?;
-                for (passage_name, passage) in passages {
-                    all_passages.insert(passage_name, passage);
-                }
-                if data.is_some() && story_data.is_none() {
-                    story_data = data;
-                }
+            InputSource::Text { name, content } => {
+                let parsed = parse_text_content(name, content)?;
+                parsed_sources.push(parsed);
             }
             InputSource::Bytes {
                 name,
                 data,
                 mime_type: _,
             } => {
-                if let Some(ext) = std::path::Path::new(name).extension()
-                    && let Some(ext_str) = ext.to_str()
-                    && matches!(ext_str, "xlsx" | "xlsm" | "xlsb" | "xls")
-                {
-                    use crate::excel::parser::ExcelParser;
-                    let result = ExcelParser::parse_from_bytes(data.clone())?;
-
-                    if !result.javascript.is_empty() {
-                        let passage = Passage {
-                            name: name.clone(),
-                            tags: Some("init script".to_string()),
-                            position: None,
-                            size: None,
-                            content: result.javascript,
-                        };
-                        all_passages.insert(name.clone(), passage);
-                    }
-                }
+                let parsed = parse_bytes_content(name, data)?;
+                parsed_sources.push(parsed);
             }
         }
     }
 
-    let final_story_data = story_data.ok_or("StoryData is required")?;
-    Ok((all_passages, final_story_data))
+    aggregate_sources(parsed_sources)
 }
 
 /// Pure build function - no I/O (synchronous)
@@ -216,6 +192,33 @@ pub fn parse(
         format_info,
         is_debug: false, // Default to false, can be set later
     })
+}
+
+/// Parse passages only - does not require StoryData
+/// Useful for IDE integration where individual files need to be parsed
+pub fn passages(
+    sources: Vec<InputSource>,
+) -> Result<IndexMap<String, Passage>, Box<dyn std::error::Error + Send + Sync>> {
+    let mut all_passages = IndexMap::new();
+
+    for source in sources {
+        match source {
+            InputSource::Text { name, content } => {
+                let parsed = parse_text_content(&name, &content)?;
+                all_passages.extend(parsed.passages);
+            }
+            InputSource::Bytes {
+                name,
+                data,
+                mime_type: _,
+            } => {
+                let parsed = parse_bytes_content(&name, &data)?;
+                all_passages.extend(parsed.passages);
+            }
+        }
+    }
+
+    Ok(all_passages)
 }
 
 /// Build HTML from already parsed data

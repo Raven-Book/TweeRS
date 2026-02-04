@@ -33,6 +33,8 @@ impl FileParser for ExcelFileParser {
                 position: None,
                 size: None,
                 content: result.javascript,
+                source_file: Some(file_path.to_string_lossy().to_string()),
+                source_line: Some(1),
             };
             passages.insert(js_passage.name.clone(), js_passage);
         }
@@ -45,6 +47,8 @@ impl FileParser for ExcelFileParser {
                 position: None,
                 size: None,
                 content: result.html,
+                source_file: Some(file_path.to_string_lossy().to_string()),
+                source_line: Some(1),
             };
             passages.insert(html_passage.name.clone(), html_passage);
         }

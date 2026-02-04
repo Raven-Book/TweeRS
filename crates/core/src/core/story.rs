@@ -37,6 +37,12 @@ pub struct Passage {
     pub size: Option<String>,
     /// The content of passage
     pub content: String,
+    /// Source file path (for IDE integration)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_file: Option<String>,
+    /// Line number in source file (1-based)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_line: Option<u32>,
 }
 
 /// StoryFormat

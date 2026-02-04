@@ -8,11 +8,12 @@ use base64::{engine::general_purpose, Engine as _};
 use indexmap::IndexMap;
 use std::path::PathBuf;
 use tracing::{debug, info, warn};
+use tweers_core::core::file::{
+    detect_file_type, parse_bytes_content, parse_text_content, FileType,
+};
 use tweers_core::core::output::HtmlOutputHandler;
-use tweers_core::core::parser::TweeParser;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::{Result, TweersError};
-use tweers_core::excel::parser::ExcelParser;
 use tweers_core::pipeline::{PipeMap, PipeNode};
 use tweers_core::util::file::{get_media_passage_type, get_mime_type_prefix};
 
@@ -164,131 +165,78 @@ impl FileParserNode {
         file_path: &PathBuf,
         context: &BuildContext,
     ) -> tweers_core::error::Result<(IndexMap<String, Passage>, Option<StoryData>)> {
-        if let Some(extension) = file_path.extension() {
-            let ext_str = extension.to_string_lossy().to_lowercase();
-            match ext_str.as_str() {
-                "js" => {
-                    let content = tokio::fs::read_to_string(file_path).await?;
-                    let passage_name = file_path.to_string_lossy().to_string();
+        let file_type = file_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|ext| detect_file_type(&format!("file.{}", ext)))
+            .unwrap_or(FileType::Unknown);
 
-                    let mut passages = IndexMap::new();
-                    let passage = Passage {
-                        name: passage_name.clone(),
-                        tags: Some("script".to_string()),
-                        position: None,
-                        size: None,
-                        content,
-                    };
-                    passages.insert(passage_name, passage);
-                    Ok((passages, None))
+        match file_type {
+            FileType::JavaScript | FileType::Css | FileType::Twee | FileType::Unknown => {
+                // Handle media files specially when base64 is enabled
+                if context.base64 {
+                    if let Some(ext) = file_path.extension().and_then(|e| e.to_str()) {
+                        if let Some(media_type) = get_media_passage_type(ext) {
+                            return self.parse_media_file(file_path, ext, media_type).await;
+                        }
+                    }
                 }
-                "css" => {
-                    let content = tokio::fs::read_to_string(file_path).await?;
-                    let passage_name = file_path.to_string_lossy().to_string();
 
-                    let mut passages = IndexMap::new();
-                    let passage = Passage {
-                        name: passage_name.clone(),
-                        tags: Some("stylesheet".to_string()),
-                        position: None,
-                        size: None,
-                        content,
-                    };
-                    passages.insert(passage_name, passage);
-                    Ok((passages, None))
-                }
-                "xlsx" | "xlsm" | "xlsb" | "xls" => self.parse_excel_file(file_path).await,
-                _ => self.parse_default_file(file_path, context).await,
+                // Read as text and use shared logic
+                let content = tokio::fs::read_to_string(file_path).await?;
+                let filename = file_path.to_string_lossy();
+                let parsed = parse_text_content(&filename, &content).map_err(|e| {
+                    TweersError::parse(format!("Failed to parse {}: {}", file_path.display(), e))
+                })?;
+                Ok((parsed.passages, parsed.story_data))
             }
-        } else {
-            Err(TweersError::parse("File has no extension"))
+            FileType::Excel => {
+                // Read as bytes and use shared logic
+                let bytes = tokio::fs::read(file_path).await?;
+                let filename = file_path.to_string_lossy();
+                let parsed = parse_bytes_content(&filename, &bytes).map_err(|e| {
+                    TweersError::parse(format!("Failed to parse {}: {}", file_path.display(), e))
+                })?;
+                Ok((parsed.passages, parsed.story_data))
+            }
+            FileType::Media => {
+                if context.base64 {
+                    if let Some(ext) = file_path.extension().and_then(|e| e.to_str()) {
+                        if let Some(media_type) = get_media_passage_type(ext) {
+                            return self.parse_media_file(file_path, ext, media_type).await;
+                        }
+                    }
+                }
+                // Non-base64 media files - return empty
+                Ok((IndexMap::new(), None))
+            }
         }
     }
 
-    async fn parse_excel_file(
+    async fn parse_media_file(
         &self,
         file_path: &PathBuf,
+        ext: &str,
+        media_type: &str,
     ) -> tweers_core::error::Result<(IndexMap<String, Passage>, Option<StoryData>)> {
+        let binary_content = tokio::fs::read(file_path).await?;
+        let base64_content = general_purpose::STANDARD.encode(&binary_content);
+        let mime_prefix = get_mime_type_prefix(ext).unwrap_or("");
+        let full_content = format!("{mime_prefix}{base64_content}");
+        let passage_name = normalize_media_path(&file_path.to_string_lossy());
+
         let mut passages = IndexMap::new();
-        let passage_name = file_path.to_string_lossy().to_string();
-
-        // Read Excel file as bytes
-        let bytes = tokio::fs::read(file_path).await?;
-
-        match ExcelParser::parse_from_bytes(bytes) {
-            Ok(result) => {
-                // Create JavaScript passage if there's JavaScript code
-                if !result.javascript.is_empty() {
-                    let passage = Passage {
-                        name: passage_name.clone(),
-                        tags: Some("init script".to_string()),
-                        position: None,
-                        size: None,
-                        content: result.javascript,
-                    };
-
-                    passages.insert(passage_name.clone(), passage);
-                    debug!(
-                        "Created JavaScript passage from Excel file: {:?}",
-                        file_path
-                    );
-                }
-
-                // Create HTML passage if there's HTML code
-                if !result.html.is_empty() {
-                    let html_passage_name = format!("{}_html", passage_name);
-                    let html_passage = Passage {
-                        name: html_passage_name.clone(),
-                        tags: Some("html".to_string()),
-                        position: None,
-                        size: None,
-                        content: result.html,
-                    };
-
-                    passages.insert(html_passage_name, html_passage);
-                    debug!("Created HTML passage from Excel file: {:?}", file_path);
-                }
-            }
-            Err(e) => {
-                warn!("Failed to parse Excel file {:?}: {}", file_path, e);
-            }
-        }
-
+        let passage = Passage {
+            name: passage_name.clone(),
+            tags: Some(media_type.to_string()),
+            position: None,
+            size: None,
+            content: full_content,
+            source_file: Some(file_path.to_string_lossy().to_string()),
+            source_line: Some(1),
+        };
+        passages.insert(passage_name, passage);
         Ok((passages, None))
-    }
-
-    async fn parse_default_file(
-        &self,
-        file_path: &PathBuf,
-        context: &BuildContext,
-    ) -> tweers_core::error::Result<(IndexMap<String, Passage>, Option<StoryData>)> {
-        if context.base64 {
-            if let Some(ext) = file_path.extension().and_then(|e| e.to_str()) {
-                if let Some(media_type) = get_media_passage_type(ext) {
-                    let binary_content = tokio::fs::read(file_path).await?;
-                    let base64_content = general_purpose::STANDARD.encode(&binary_content);
-                    let mime_prefix = get_mime_type_prefix(ext).unwrap_or("");
-                    let full_content = format!("{mime_prefix}{base64_content}");
-                    let passage_name = normalize_media_path(&file_path.to_string_lossy());
-
-                    let mut passages = IndexMap::new();
-                    let passage = Passage {
-                        name: passage_name.clone(),
-                        tags: Some(media_type.to_string()),
-                        position: None,
-                        size: None,
-                        content: full_content,
-                    };
-                    passages.insert(passage_name, passage);
-                    return Ok((passages, None));
-                }
-            }
-        }
-
-        let content = tokio::fs::read_to_string(file_path).await?;
-        TweeParser::parse(&content).map_err(|e| {
-            TweersError::parse(format!("Failed to parse {}: {}", file_path.display(), e))
-        })
     }
 }
 

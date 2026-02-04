@@ -81,12 +81,13 @@ pub fn build_from_parsed(parsed_js: JsValue) -> Result<JsBuildOutput, JsValue> {
     let js_parsed: JsParseOutput = serde_wasm_bindgen::from_value(parsed_js)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse parsed data: {}", e)))?;
 
-    // Convert passages from HashMap to IndexMap
-    let passages: IndexMap<String, crate::core::story::Passage> = js_parsed
+    // Convert passages from HashMap to IndexMap (sorted by key)
+    let mut passages: IndexMap<String, crate::core::story::Passage> = js_parsed
         .passages
         .into_iter()
         .map(|(k, v)| (k, v.into()))
         .collect();
+    passages.sort_keys();
 
     // Convert to ParseOutput
     let parse_output = crate::api::ParseOutput {
@@ -102,4 +103,24 @@ pub fn build_from_parsed(parsed_js: JsValue) -> Result<JsBuildOutput, JsValue> {
 
     // Convert output to JS-friendly type
     Ok(JsBuildOutput::new(output.html))
+}
+
+/// Parse passages only - does not require StoryData
+#[wasm_bindgen]
+pub fn passages(sources_js: JsValue) -> Result<JsValue, JsValue> {
+    use super::types::{JsInputSource, JsPassage};
+
+    let js_sources: Vec<JsInputSource> = serde_wasm_bindgen::from_value(sources_js)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse sources: {}", e)))?;
+
+    let sources: Vec<crate::api::InputSource> = js_sources.into_iter().map(|s| s.into()).collect();
+
+    let output = crate::api::passages(sources)
+        .map_err(|e| JsValue::from_str(&format!("Parse failed: {}", e)))?;
+
+    let js_passages: std::collections::HashMap<String, JsPassage> =
+        output.into_iter().map(|(k, v)| (k, v.into())).collect();
+
+    serde_wasm_bindgen::to_value(&js_passages)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize output: {}", e)))
 }

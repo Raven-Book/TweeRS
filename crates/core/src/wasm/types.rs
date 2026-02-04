@@ -44,6 +44,10 @@ pub struct JsPassage {
     pub position: Option<String>,
     pub size: Option<String>,
     pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_line: Option<u32>,
 }
 
 /// JavaScript-friendly StoryData
@@ -152,6 +156,8 @@ impl From<crate::core::story::Passage> for JsPassage {
             position: passage.position,
             size: passage.size,
             content: passage.content,
+            source_file: passage.source_file,
+            source_line: passage.source_line,
         }
     }
 }
@@ -164,6 +170,8 @@ impl From<JsPassage> for crate::core::story::Passage {
             position: js_passage.position,
             size: js_passage.size,
             content: js_passage.content,
+            source_file: js_passage.source_file,
+            source_line: js_passage.source_line,
         }
     }
 }

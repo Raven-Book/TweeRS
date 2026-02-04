@@ -52,6 +52,8 @@ impl FileParser for MediaFileParser {
             position: None,
             size: None,
             content: full_content,
+            source_file: Some(file_path.to_string_lossy().to_string()),
+            source_line: Some(1),
         };
         passages.insert(passage_name, passage);
         Ok((passages, None))

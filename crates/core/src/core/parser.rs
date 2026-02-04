@@ -9,7 +9,8 @@ struct PassageMetadata {
     size: String,
 }
 
-type PassageHeader = (String, Option<String>, Option<String>, Option<String>);
+type PassageHeader = (String, Option<String>, Option<String>, Option<String>, u32); // name, tags, position, size, line_num
+type HeaderParseResult = (String, Option<String>, Option<String>, Option<String>); // name, tags, position, size
 type ParseResult = Result<(IndexMap<String, Passage>, Option<StoryData>), String>;
 
 /// Struct to reduce function parameters
@@ -39,20 +40,31 @@ impl TweeParser {
         for (line_num, line) in content.lines().enumerate() {
             debug!("Processing line {}: {:?}", line_num + 1, line);
             if line.starts_with("::") {
-                if let Some((name, tags, position, size)) = current_passage.take() {
+                if let Some((name, tags, position, size, start_line)) = current_passage.take() {
                     let mut context = PassageContext {
                         story_title: &mut story_title,
                         passages: &mut passages,
                         story_data: &mut story_data,
                     };
-                    Self::save_passage(name, tags, position, size, &current_content, &mut context)?;
+                    Self::save_passage(
+                        name,
+                        tags,
+                        position,
+                        size,
+                        start_line,
+                        &current_content,
+                        &mut context,
+                    )?;
                     current_content.clear();
                 }
                 let header = line.trim_start_matches("::").trim();
                 debug!("Parsing header: {:?}", header);
-                let metadata = Self::parse_header(header)?;
-                debug!("Parsed metadata: {:?}", metadata);
-                current_passage = Some(metadata);
+                let (name, tags, position, size) = Self::parse_header(header)?;
+                debug!(
+                    "Parsed metadata: {:?}",
+                    (name.clone(), tags.clone(), position.clone(), size.clone())
+                );
+                current_passage = Some((name, tags, position, size, (line_num + 1) as u32));
             } else if line.starts_with("\\::") {
                 current_content.push(line.trim_start_matches("\\").trim());
             } else {
@@ -60,13 +72,21 @@ impl TweeParser {
             }
         }
 
-        if let Some((name, tags, position, size)) = current_passage {
+        if let Some((name, tags, position, size, start_line)) = current_passage {
             let mut context = PassageContext {
                 story_title: &mut story_title,
                 passages: &mut passages,
                 story_data: &mut story_data,
             };
-            Self::save_passage(name, tags, position, size, &current_content, &mut context)?;
+            Self::save_passage(
+                name,
+                tags,
+                position,
+                size,
+                start_line,
+                &current_content,
+                &mut context,
+            )?;
         }
 
         // Merge story_title into story_data if present
@@ -84,6 +104,7 @@ impl TweeParser {
         tags: Option<String>,
         position: Option<String>,
         size: Option<String>,
+        start_line: u32,
         content_lines: &Vec<&str>,
         context: &mut PassageContext,
     ) -> Result<(), String> {
@@ -118,13 +139,15 @@ impl TweeParser {
             position,
             size,
             content,
+            source_file: None,
+            source_line: Some(start_line),
         };
         context.passages.insert(name, passage);
 
         Ok(())
     }
 
-    fn parse_header(header: &str) -> Result<PassageHeader, String> {
+    fn parse_header(header: &str) -> Result<HeaderParseResult, String> {
         let mut chars = header.chars().peekable();
 
         while let Some(&ch) = chars.peek() {

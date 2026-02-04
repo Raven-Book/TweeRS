@@ -73,3 +73,25 @@ fn test_html_generation_from_test_story() {
         "HTML should contain passage content"
     );
 }
+
+#[test]
+fn test_passages_api() {
+    use tweers_core::api::{InputSource, passages};
+
+    let content = ":: Start\nHello world\n\n:: Second [tag1 tag2]\nAnother passage";
+    let sources = vec![InputSource::Text {
+        name: "test.twee".to_string(),
+        content: content.to_string(),
+    }];
+
+    let result = passages(sources);
+    println!("Result: {:?}", result);
+    assert!(result.is_ok(), "passages failed: {:?}", result.err());
+
+    let passages = result.unwrap();
+    println!("Passages count: {}", passages.len());
+    for (name, p) in &passages {
+        println!("- {}: line {:?}", name, p.source_line);
+    }
+    assert_eq!(passages.len(), 2, "Expected 2 passages");
+}

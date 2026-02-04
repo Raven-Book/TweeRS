@@ -36,6 +36,8 @@ export interface JsPassage {
   position?: string;
   size?: string;
   content: string;
+  source_file?: string;
+  source_line?: number;
 }
 
 /**
@@ -98,6 +100,12 @@ export function parse(sources_js: JsInputSource[]): JsParseOutput;
 export function build_from_parsed(
   parsed_js: JsParseOutput
 ): JsBuildOutput;
+
+/**
+ * Parse passages only - does not require StoryData
+ * Useful for IDE integration where individual files need to be parsed
+ */
+export function passages(sources_js: JsInputSource[]): Record<string, JsPassage>;
 
 /**
  * Initialize panic hook for better error messages in browser console
