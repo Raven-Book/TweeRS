@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.3
+
+### Bug Fixes
+
+- [`6cc15d9`](https://github.com/Raven-Book/TweeRS/commit/6cc15d9d58ce94c61924e66698533881f320abd3): Apply start_passage override if config provided
+
 ## v1.0.2
 
 ### Bug Fixes

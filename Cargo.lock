@@ -2240,7 +2240,7 @@ dependencies = [
 
 [[package]]
 name = "tweers-cli"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "clap",
  "flate2",
@@ -2260,7 +2260,7 @@ dependencies = [
 
 [[package]]
 name = "tweers-core"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "async-trait",
  "calamine",
@@ -2279,7 +2279,7 @@ dependencies = [
 
 [[package]]
 name = "tweers-core-full"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "async-trait",
  "base64",

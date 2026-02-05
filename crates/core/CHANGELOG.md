@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.0.3
+
+### Chores
+
+- [`aa8051d`](https://github.com/Raven-Book/TweeRS/commit/aa8051db87cd1cdb97c0053b3954b971a2689dbc): Run cargo fmt and clippy --fix
+
+### Bug Fixes
+
+- [`6cc15d9`](https://github.com/Raven-Book/TweeRS/commit/6cc15d9d58ce94c61924e66698533881f320abd3): Apply start_passage override if config provided
+- [`6cc15d9`](https://github.com/Raven-Book/TweeRS/commit/6cc15d9d58ce94c61924e66698533881f320abd3): Fix file sorting issue
+
 ## v1.0.2
 
 ### Bug Fixes
