@@ -155,12 +155,23 @@ fn parse_sources(
 /// Pure build function - no I/O (synchronous)
 pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Error + Send + Sync>> {
     use crate::core::output::HtmlOutputHandler;
+    use crate::util::sort::compare_paths;
 
     // Parse story format
     let story_format = StoryFormat::parse(&config.format_info.source)?;
 
     // Parse all sources
     let (passages, mut story_data) = parse_sources(&config.sources)?;
+
+    // Sort passages by source_file using depth-first natural order
+    let mut passages_vec: Vec<(String, Passage)> = passages.into_iter().collect();
+    passages_vec.sort_by(|a, b| {
+        compare_paths(
+            a.1.source_file.as_deref().unwrap_or(&a.0),
+            b.1.source_file.as_deref().unwrap_or(&b.0),
+        )
+    });
+    let passages: IndexMap<String, Passage> = passages_vec.into_iter().collect();
 
     // Apply start_passage override if provided
     if config.start_passage.is_some() {
@@ -248,4 +259,15 @@ pub fn build_from_parsed(
         html,
         story_data: parsed.story_data,
     })
+}
+
+/// Sort file paths using depth-first natural ordering
+///
+/// Returns paths sorted with deeper paths first, then natural sort within same depth.
+/// This matches the order used for passage processing in build.
+pub fn sort_paths(paths: Vec<String>) -> Vec<String> {
+    use crate::util::sort::compare_paths;
+    let mut sorted = paths;
+    sorted.sort_by(|a, b| compare_paths(a, b));
+    sorted
 }

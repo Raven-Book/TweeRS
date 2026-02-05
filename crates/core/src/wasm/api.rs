@@ -81,13 +81,23 @@ pub fn build_from_parsed(parsed_js: JsValue) -> Result<JsBuildOutput, JsValue> {
     let js_parsed: JsParseOutput = serde_wasm_bindgen::from_value(parsed_js)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse parsed data: {}", e)))?;
 
-    // Convert passages from HashMap to IndexMap (sorted by key)
-    let mut passages: IndexMap<String, crate::core::story::Passage> = js_parsed
+    // Convert passages from HashMap to IndexMap with depth-first natural sorting by source_file
+    let mut passages_vec: Vec<(String, crate::core::story::Passage)> = js_parsed
         .passages
         .into_iter()
         .map(|(k, v)| (k, v.into()))
         .collect();
-    passages.sort_keys();
+
+    // Sort by source_file using depth-first natural order
+    passages_vec.sort_by(|a, b| {
+        crate::util::sort::compare_paths(
+            a.1.source_file.as_deref().unwrap_or(&a.0),
+            b.1.source_file.as_deref().unwrap_or(&b.0),
+        )
+    });
+
+    let passages: IndexMap<String, crate::core::story::Passage> =
+        passages_vec.into_iter().collect();
 
     // Convert to ParseOutput
     let parse_output = crate::api::ParseOutput {
@@ -122,5 +132,20 @@ pub fn passages(sources_js: JsValue) -> Result<JsValue, JsValue> {
         output.into_iter().map(|(k, v)| (k, v.into())).collect();
 
     serde_wasm_bindgen::to_value(&js_passages)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize output: {}", e)))
+}
+
+/// Sort file paths using depth-first natural ordering
+///
+/// Returns paths sorted with deeper paths first, then natural sort within same depth.
+/// This matches the order used for passage processing in build.
+#[wasm_bindgen]
+pub fn sort_paths(paths_js: JsValue) -> Result<JsValue, JsValue> {
+    let paths: Vec<String> = serde_wasm_bindgen::from_value(paths_js)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse paths: {}", e)))?;
+
+    let sorted = crate::api::sort_paths(paths);
+
+    serde_wasm_bindgen::to_value(&sorted)
         .map_err(|e| JsValue::from_str(&format!("Failed to serialize output: {}", e)))
 }
