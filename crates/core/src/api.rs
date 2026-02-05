@@ -160,7 +160,12 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
     let story_format = StoryFormat::parse(&config.format_info.source)?;
 
     // Parse all sources
-    let (passages, story_data) = parse_sources(&config.sources)?;
+    let (passages, mut story_data) = parse_sources(&config.sources)?;
+
+    // Apply start_passage override if provided
+    if config.start_passage.is_some() {
+        story_data.start = config.start_passage;
+    }
 
     // Generate HTML
     let html = HtmlOutputHandler::generate_html(
