@@ -211,7 +211,7 @@ Another passage
 
 #[test]
 fn test_build_from_parsed_api() {
-    use tweers_core::api::{build_from_parsed, parse, InputSource, StoryFormatInfo};
+    use tweers_core::api::{InputSource, StoryFormatInfo, build_from_parsed, parse};
 
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let test_dir = manifest_dir.parent().unwrap().parent().unwrap();
@@ -249,7 +249,11 @@ Hello from parsed build
 
     // Then build from parsed
     let result = build_from_parsed(parsed);
-    assert!(result.is_ok(), "build_from_parsed failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build_from_parsed failed: {:?}",
+        result.err()
+    );
 
     let output = result.unwrap();
 

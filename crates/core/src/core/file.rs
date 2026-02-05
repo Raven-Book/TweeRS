@@ -224,10 +224,10 @@ pub fn aggregate_sources(
     let mut final_story_data = story_data.ok_or("StoryData is required")?;
 
     // Cross-file StoryTitle merge
-    if final_story_data.name.is_none() {
-        if let Some(title_passage) = all_passages.get("StoryTitle") {
-            final_story_data.name = Some(title_passage.content.trim().to_string());
-        }
+    if final_story_data.name.is_none()
+        && let Some(title_passage) = all_passages.get("StoryTitle")
+    {
+        final_story_data.name = Some(title_passage.content.trim().to_string());
     }
 
     Ok((all_passages, final_story_data))
