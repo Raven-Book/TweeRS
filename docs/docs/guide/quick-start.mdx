@@ -1,1 +1,148 @@
 # 快速开始
+
+import { Steps } from '@theme';
+import { TweePlayground } from '@/components';
+
+本指南将带你从零创建一个互动小说项目，并用 TweeRS 编译成可运行的 HTML 游戏。
+
+:::tip 前置条件
+请确保已完成 [安装](/guide/installation)，并了解 [核心概念](/guide/concepts)。
+:::
+
+## 创建项目
+
+<Steps>
+  ### 新建项目目录
+
+  创建一个文件夹作为项目根目录，并在其中新建 `src` 子目录用于存放 `.twee` 文件：
+
+  ### 编写故事
+
+  在 `src` 目录下创建 `main.twee` 文件，写入以下内容：
+
+  ```twee
+  :: StoryTitle
+  我的第一个故事
+
+  :: StoryData
+  {
+    "ifid": "E6774F49-636B-451F-A50C-D05DE1A83AEB",
+    "format": "SugarCube",
+    "format-version": "2.37.3"
+  }
+
+  :: Start
+  你醒来时发现自己在一间陌生的房间里。
+
+  房间里有一扇门和一扇窗户。
+
+  [[推开门|Door]]
+  [[看看窗外|Window]]
+
+  :: Door
+  门外是一条长长的走廊，尽头隐约有光。
+
+  [[沿走廊前进|Hallway]]
+  [[回到房间|Start]]
+
+  :: Window
+  窗外是一片星空，你似乎在很高的地方。
+
+  [[回到房间|Start]]
+
+  :: Hallway
+  你走到走廊尽头，推开最后一扇门——
+
+  阳光洒在你身上，你自由了。
+
+  ''恭喜通关！''
+  ```
+
+  :::tip
+  `ifid` 是故事的唯一标识符（UUID），每个项目应使用不同的值。
+  :::
+
+  ### 构建游戏
+
+  在项目根目录运行：
+
+  ```bash
+  tweers build src/ -o game.html
+  ```
+
+  构建完成后，用浏览器打开 `game.html` 即可游玩你的互动小说。
+</Steps>
+
+## 在线预览
+
+你可以在下方编辑器中直接修改代码并预览效果：
+
+<TweePlayground code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+我的第一个故事
+
+:: Start
+你醒来时发现自己在一间陌生的房间里。
+
+房间里有一扇门和一扇窗户。
+
+[[推开门|Door]]
+[[看看窗外|Window]]
+
+:: Door
+门外是一条长长的走廊，尽头隐约有光。
+
+[[沿走廊前进|Hallway]]
+[[回到房间|Start]]
+
+:: Window
+窗外是一片星空，你似乎在很高的地方。
+
+[[回到房间|Start]]
+
+:: Hallway
+你走到走廊尽头，推开最后一扇门——
+
+阳光洒在你身上，你自由了。
+
+''恭喜通关！''
+`} />
+
+## 监听模式
+
+在写作过程中，可以使用 `-w` 参数开启监听模式。TweeRS 会在文件变更时自动重新构建：
+
+```bash
+tweers build story/ -o game.html -w
+```
+
+这样你只需保存文件，刷新浏览器即可看到最新效果。
+
+## 多文件组织
+
+随着故事变长，你可以将段落拆分到多个 `.twee` 文件中。TweeRS 会自动合并目录下所有 `.twee` 和 `.tw` 文件：
+
+```
+my-story/
+├── src/
+│   ├── main.twee        # StoryTitle、StoryData 和 Start
+│   ├── chapter1.twee    # 第一章的段落
+│   └── chapter2.twee    # 第二章的段落
+└── game.html            # 构建输出
+```
+
+:::tip
+只需在一个文件中定义 `StoryTitle` 和 `StoryData`，其余文件只写段落即可。
+:::
+
+## 下一步
+
+- [VSCode 插件](/guide/vscode) — 在编辑器内实时预览、段落导航与构建
+- [扩展功能: 数据表](/guide/excel) — 从 Excel 导入数据到游戏中
+- [扩展功能: 脚本注入](/guide/scripts) — 自定义构建流程

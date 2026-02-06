@@ -1,1 +1,55 @@
+import { FileLink } from '@/components/FileLink';
+
 # 安装指南
+
+> [!INFO]
+> 本指南以 Windows 为例，Linux / macOS 用户请参考相同步骤自行安装。
+
+## 安装
+
+进行下述操作前，请确保已安装 [VSCode](https://code.visualstudio.com/) 并保证正常启动。
+
+### TweeRS 命令行程序
+
+前往 [GitHub Releases](https://github.com/Raven-Book/TweeRS/releases) 页面，下载最新版本。
+
+#### 方式一：使用安装器（推荐）
+
+下载 `tweers-setup-x86_64.exe`，运行后按提示完成安装。安装器会自动将 `tweers` 添加到系统 PATH。
+
+#### 方式二：手动安装
+
+1. 下载对应平台的压缩包并解压，得到 `tweers` 可执行文件
+2. 将其放置到你希望的目录下
+3. 将该目录添加到系统 [PATH 环境变量](https://www.bing.com/search?q=Windows+10+%E8%AE%BE%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F) 中
+
+#### 验证安装
+
+打开终端，运行：
+
+```bash
+tweers --version
+```
+
+若正确输出版本号，则安装成功。
+
+#### 更新
+
+TweeRS 内置了更新命令，运行以下命令即可升级到最新版本：
+
+```bash
+tweers update
+```
+
+
+### Visual Studio Code 插件
+
+首先，点击 [Tweers Dev Tools](https://github.com/Raven-Book/TweeRS/releases/download/vscode/tweers-dev-tool.vsix) 下载 `.vsix` 文件。
+
+可通过以下方式安装：
+
+- 直接双击 `.vsix` 文件完成安装
+- 点击扩展栏右上角的 `...`，选择「从 VSIX 安装…」
+- 将 `.vsix` 文件直接拖拽到扩展栏中
+
+<FileLink src="/imgs/installation/tweers-dev-tool install.png" />

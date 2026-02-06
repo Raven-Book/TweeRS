@@ -1,0 +1,157 @@
+import { TemplateDownload } from '@/components';
+
+# VSCode 插件
+
+Tweers Dev Tool 是 TweeRS 的 Visual Studio Code 插件，提供实时预览、段落导航、构建输出等功能，让你在编辑器内完成故事开发的完整流程。
+
+:::tip 前置条件
+请确保已完成 [安装](/guide/installation)，包括 TweeRS 命令行程序和 VSCode 插件。
+:::
+
+## 激活条件
+
+当工作区中包含 `.twee` 或 `.tw` 文件时，插件会自动激活。激活后：
+
+- 在侧边栏创建 **Passages** 和 **Build Files** 视图
+- 在状态栏显示 `Tweers [版本号]`
+- 自动在 `.storyformats/` 目录下准备故事格式文件夹
+- 如果检测到 Twee 文件，自动打开预览面板
+
+## 项目结构
+
+插件默认使用以下目录结构：
+
+```
+项目根目录/
+├── src/                          # 源文件目录（可配置）
+│   ├── *.twee / *.tw             # 故事文件
+│   ├── *.js / *.css              # 脚本 / 样式
+│   └── *.xlsx / *.xls            # 数据表
+├── dist/                         # 构建输出（自动创建）
+│   └── story.html
+└── .storyformats/                # 故事格式（自动创建）
+    └── 故事格式-版本号/
+        └── format.js
+```
+
+## 实时预览
+
+使用以下任一方式打开预览：
+
+- 命令面板：`Tweers: Preview Story`
+- 点击侧边栏 Passages 视图工具栏的播放按钮
+- 点击状态栏的 `Tweers [版本号]`
+
+预览面板会在编辑器右侧打开，显示编译后的故事。当源文件发生变更时，预览会自动重新构建。
+
+每次预览都会清除浏览器的 `localStorage` 和 `sessionStorage`，避免旧数据干扰。
+
+## 构建 HTML
+
+通过命令面板执行 `Tweers: Build HTML`，将故事编译为独立的 HTML 文件，输出到 `dist/story.html`。
+
+构建过程与预览相同，适合用于最终导出。
+
+## 侧边栏视图
+
+### Passages（段落视图）
+
+显示所有 Twee 文件中的段落，支持以下操作：
+
+**搜索段落**
+- 点击工具栏搜索图标，或执行 `Tweers: Search Passages`
+- 支持按段落名称和标签进行模糊搜索（不区分大小写）
+- 点击关闭图标或执行 `Tweers: Clear Search` 清除搜索
+
+**分组方式**
+- 点击工具栏列表图标，或执行 `Tweers: Toggle Passages Grouping`
+- **无分组**：所有段落按字母排序平铺显示
+- **按文件分组**：段落按所属文件和文件夹层级分组
+
+**段落信息**
+- 主标签：段落名称
+- 描述：标签（如有）
+- 悬停提示：文件路径和行号
+- 点击段落可跳转到对应文件位置
+
+**从指定段落运行**
+- 右键点击任意段落（特殊段落除外），选择 `Run from here`
+- 将该段落设为故事起点，重新构建预览
+- 当前起点段落会显示黄色星标图标
+
+:::tip
+`StoryData` 和 `StoryTitle` 是特殊段落，不支持「从此处运行」。
+:::
+
+### Build Files（构建文件视图）
+
+显示源文件目录中所有会被纳入构建的文件，支持的文件类型：
+
+| 类型 | 扩展名 |
+|------|--------|
+| 故事文件 | `.twee`、`.tw` |
+| 脚本 | `.js` |
+| 样式表 | `.css` |
+| 数据表 | `.xlsx`、`.xls`、`.xlsm`、`.xlsb` |
+
+点击文件可直接打开。
+
+## 调试模式
+
+通过以下方式切换调试模式：
+
+- 命令面板：`Tweers: Enable Debug Mode` / `Tweers: Disable Debug Mode`
+- Passages 视图工具栏的调试按钮
+
+启用调试模式后，构建输出会包含额外的调试信息。切换时预览会自动刷新。
+
+## 配置项
+
+在 VSCode 设置中搜索 `tweers-dev-tool`：
+
+| 设置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `tweers-dev-tool.sourceFolder` | `"src"` | 源文件目录，相对于工作区根目录 |
+| `tweers-dev-tool.passagesGroupBy` | `"none"` | 段落分组方式：`"none"` 或 `"file"` |
+
+## 命令一览
+
+| 命令 | 说明 |
+|------|------|
+| `Tweers: Preview Story` | 打开实时预览 |
+| `Tweers: Build HTML` | 导出 HTML 文件 |
+| `Tweers: Enable Debug Mode` | 启用调试模式 |
+| `Tweers: Disable Debug Mode` | 关闭调试模式 |
+| `Tweers: Refresh Views` | 刷新侧边栏视图 |
+| `Tweers: Search Passages` | 搜索段落 |
+| `Tweers: Clear Search` | 清除搜索 |
+| `Tweers: Toggle Passages Grouping` | 切换段落分组方式 |
+
+## 故事格式
+
+插件从 `StoryData` 段落中读取 `format` 和 `format-version` 字段，自动在 `.storyformats/` 下创建对应目录。你需要将故事格式的 `format.js` 文件放入该目录：
+
+```
+.storyformats/sugarcube-2.37.3/format.js
+```
+
+如果格式文件缺失，构建时会报错。
+
+### 下载项目模板
+
+选择一个故事格式，下载包含示例故事和故事格式文件的模板项目：
+
+<TemplateDownload />
+
+---
+
+解压后的目录结构：
+
+```
+demo/
+├── .storyformats/
+│   └── sugarcube-2.37.3/    # 故事格式（取决于你的选择）
+│       └── format.js
+└── src/
+    └── index.tw             # 示例故事文件
+```
