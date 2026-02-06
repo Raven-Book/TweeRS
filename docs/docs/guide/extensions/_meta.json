@@ -1,0 +1,4 @@
+[
+  { "type": "file", "name": "excel", "label": "数据表" },
+  { "type": "file", "name": "scripts", "label": "脚本注入" }
+]

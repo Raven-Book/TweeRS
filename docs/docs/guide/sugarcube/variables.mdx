@@ -1,0 +1,101 @@
+# 变量
+
+import { TweePlayground } from '@/components';
+import { AssignmentVisualizer } from '@/teaching';
+
+变量用来记录玩家的状态，比如名字、血量、是否拿到了某个道具。
+
+## 变量与赋值
+
+**变量**是程序中用于存储数据的命名容器。将数据写入变量的操作称为**赋值**。
+
+<AssignmentVisualizer
+  hint="变量像盒子，往盒放东西就是赋值"
+  steps={[
+  { code: '<<set $gold = 10>>', variable: '$gold', value: '10', description: '把 10 放进 $gold' },
+  { code: '<<set $gold = 25>>', variable: '$gold', value: '25', prevValue: '10', description: '用 25 替换掉原来的 10' },
+  { code: '<<set $gold += 5>>', variable: '$gold', value: '30', prevValue: '25', description: '在 25 的基础上加 5，变成 30' },
+]} />
+
+## 存档变量
+
+以 `$` 开头的变量会保存到存档中，可以跨片段使用。用 `<<set>>` 宏来赋值。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+变量示例
+
+:: Start
+<<set $gold = 10>>
+你有 $gold 枚金币。
+
+[[去商店|Shop]]
+
+:: Shop
+<<set $gold -= 3>>
+你花了 3 枚金币买了一把剑。
+/* 直接在文本中写 $gold，会自动替换为变量的值 */
+现在还剩 $gold 枚金币。
+`} />
+
+
+## 临时变量
+
+以 `_` 开头的变量只在当前段落有效，离开段落后自动消失：
+
+```twee
+:: Start
+<<set _greeting = "你好">>
+_greeting，欢迎来到游戏！
+```
+
+临时变量适合存放只在当前段落用到的数值，不会污染存档变量。
+
+## 常用操作
+
+| 写法 | 含义 |
+|------|------|
+| `<<set $hp = 100>>` | 赋值 |
+| `<<set $hp += 10>>` | 加 |
+| `<<set $hp -= 5>>` | 减 |
+| `<<set $name = "小明">>` | 字符串 |
+| `<<set $hasKey = true>>` | 布尔值 |
+
+## 练习
+
+试着完成下面的小游戏：玩家初始有 `$hp` 为 100，每次「探险」减少 20 点血量，并显示当前剩余血量。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+变量练习
+
+:: Start
+<<set $hp = 100>>
+你的血量：$hp
+
+[[去探险|Adventure]]
+
+:: Adventure
+你遭遇了怪物的攻击！
+
+剩余血量：$hp
+
+[[继续探险|Adventure]]
+[[回到营地|Start]]
+`} />
+
+:::tip 提示
+你需要在 `Adventure` 段落中添加一行 `<<set>>` 来扣减血量。
+:::

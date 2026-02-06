@@ -1,0 +1,30 @@
+# 循环
+
+import { TweePlayground } from '@/components';
+
+> [!warning]
+> 施工中🚧 
+
+循环用于重复生成内容，比如显示物品列表或重复执行操作。
+
+## `<<for>>` 基础用法
+
+`<<for>>` 的语法和 JavaScript 的 `for` 循环类似：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+循环示例
+
+:: Start
+<<for _i = 1; _i <= 5; _i++>>
+第 _i 行
+<</for>>
+`} />
+
+注意循环内使用临时变量 `_i`，避免污染全局状态。

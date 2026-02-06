@@ -6,6 +6,7 @@ import * as tweers from 'tweers-core';
 interface Props {
   code: string;
   height?: string;
+  hideStoryHeader?: boolean;
 }
 
 interface FormatInfo {
@@ -45,6 +46,26 @@ function replaceStoryFormat(code: string, name: string, version: string): string
   return result;
 }
 
+// 从 Twee 代码中分离 StoryTitle 和 StoryData 段落
+function splitStoryHeader(code: string): { header: string; body: string } {
+  const passages = code.split(/^(?=:: )/m);
+  const headerParts: string[] = [];
+  const bodyParts: string[] = [];
+
+  for (const passage of passages) {
+    if (/^:: Story(Title|Data)\b/.test(passage)) {
+      headerParts.push(passage);
+    } else {
+      bodyParts.push(passage);
+    }
+  }
+
+  return {
+    header: headerParts.join('').trim(),
+    body: bodyParts.join('').trim(),
+  };
+}
+
 // 从代码中提取当前格式
 function getCurrentFormat(code: string): string {
   const formatMatch = code.match(/"format":\s*"([^"]*)"/i);
@@ -55,8 +76,16 @@ function getCurrentFormat(code: string): string {
   return '';
 }
 
-export function TweePlayground({ code, height = '280px' }: Props) {
-  const [input, setInput] = useState(() => replaceIFID(code.trim()));
+export function TweePlayground({ code, height = '280px', hideStoryHeader = false }: Props) {
+  const [storyHeader] = useState(() => {
+    if (!hideStoryHeader) return '';
+    return splitStoryHeader(replaceIFID(code.trim())).header;
+  });
+  const [input, setInput] = useState(() => {
+    const full = replaceIFID(code.trim());
+    if (!hideStoryHeader) return full;
+    return splitStoryHeader(full).body;
+  });
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [isDebug, setIsDebug] = useState(false);
@@ -106,14 +135,21 @@ export function TweePlayground({ code, height = '280px' }: Props) {
     return await response.text();
   }
 
+  // 获取完整的 Twee 代码（拼接隐藏的头部）
+  function getFullSource(source: string): string {
+    if (!storyHeader) return source;
+    return storyHeader + '\n\n' + source;
+  }
+
   // 构建 HTML
   async function build(source: string, debug?: boolean) {
     const useDebug = debug ?? isDebug;
     setError('');
     try {
+      const fullSource = getFullSource(source);
       // 解析 Twee 代码，返回包含 format_info（source 为空）的结果
       const parsed = tweers.parse([
-        { type: 'text', name: 'story.twee', content: source },
+        { type: 'text', name: 'story.twee', content: fullSource },
       ]);
 
       // 从 story_data 中获取格式信息
@@ -231,7 +267,7 @@ export function TweePlayground({ code, height = '280px' }: Props) {
           style={styles.textarea}
         />
         <div style={styles.toolbar}>
-          {availableFormats.length > 0 && (
+          {availableFormats.length > 0 && !hideStoryHeader && (
             <select
               value={getCurrentFormat(input)}
               onChange={(e) => handleFormatChange(e.target.value)}

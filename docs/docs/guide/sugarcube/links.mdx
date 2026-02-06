@@ -1,0 +1,74 @@
+# 链接与导航
+
+import { TweePlayground } from '@/components';
+
+链接是互动小说的核心——玩家通过点击链接在段落之间跳转。
+
+## 基础链接
+
+用 `[[段落名]]` 创建链接，点击后跳转到对应段落：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+链接示例
+
+:: Start
+你站在路口。
+
+[[向左走]]
+[[向右走]]
+
+:: 向左走
+你来到了一片花园。
+
+[[回到路口|Start]]
+
+:: 向右走
+你来到了一条小河边。
+
+[[回到路口|Start]]
+`} />
+
+## 显示文本与目标分离
+
+`[[显示文本|目标段落]]` 可以让链接显示的文字和跳转目标不同。
+
+上面示例中的 `[[回到路口|Start]]` 就是这种用法——显示「回到路口」，但跳转到 `Start` 段落。
+
+也可以用箭头语法：`[[显示文本->目标段落]]`，效果相同。
+
+## 练习
+
+制作一个三个房间的小迷宫：卧室、厨房、客厅。每个房间可以通往其他两个房间，要求链接显示的文字和段落名不同（使用 `|` 或 `->` 语法）。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+链接练习
+
+:: Start
+你在卧室里醒来。
+
+/* 添加前往厨房和客厅的链接 */
+
+:: Kitchen
+这里是厨房，桌上有早餐。
+
+/* 添加前往卧室和客厅的链接 */
+
+:: LivingRoom
+这里是客厅，沙发很舒服。
+
+/* 添加前往卧室和厨房的链接 */
+`} />

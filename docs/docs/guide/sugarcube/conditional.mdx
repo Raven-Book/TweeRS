@@ -1,0 +1,203 @@
+# 条件分支
+
+import { TweePlayground } from '@/components';
+import { ConditionVisualizer } from '@/teaching';
+
+条件分支让故事根据变量的值显示不同内容。要理解条件分支，先要认识**布尔值**和**表达式**。
+
+## 布尔值
+
+布尔值只有两个状态：`true`（真）和 `false`（假），用来表示「是或否」。
+
+```twee
+<<set $hasKey = true>>   /* 有钥匙 */
+<<set $hasKey = false>>  /* 没有钥匙 */
+```
+
+## 条件表达式
+
+**条件表达式**是一段可以算出结果的代码。`<<if>>` 后面跟的就是条件表达式，SugarCube 会计算它的结果：`true` 执行，`false` 跳过。
+
+| 表达式 | 含义 |
+|------|------|
+| `$hp > 50` | $hp 大于 50 |
+| `$gold >= 10` | $gold 大于等于 10 |
+| `$hp < 0` | $hp 小于 0 |
+| `$level == 5` | $level 等于 5 |
+| `$name != "小明"` | $name 不等于 "小明" |
+| `!$hasKey` | $hasKey 取反（没有钥匙） |
+
+布尔变量可以直接放在 `<<if>>` 后面，不需要写 `== true`：
+
+```twee
+<<if $hasKey>>       /* 推荐 */
+<<if $hasKey == true>>  /* 可以但多余 */
+```
+
+## `<<if>>` 基础用法
+
+拖动滑块改变 `$hp` 的值，观察条件判断的走向：
+
+<ConditionVisualizer
+  variable="$hp"
+  min={0}
+  max={100}
+  initial={30}
+  branches={[
+    { condition: '> 50', result: '你精力充沛。' },
+  ]}
+  fallback="你看起来很虚弱。"
+/>
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+条件示例
+
+:: Start
+<<set $hp = 30>>
+你的血量：$hp
+
+<<if $hp > 50>>
+你精力充沛。
+<<else>>
+你看起来很虚弱。
+<</if>>
+`} />
+
+试试把 `$hp` 改成 `80`，看看输出有什么变化。
+
+## 多重条件 `<<elseif>>`
+
+当需要判断多种情况时，用 `<<elseif>>` 添加更多分支。SugarCube 从上到下依次检查，命中第一个为真的分支后就停止：
+
+<ConditionVisualizer
+  variable="$gold"
+  min={0}
+  max={80}
+  initial={15}
+  branches={[
+    { condition: '>= 50', result: '你非常富有！' },
+    { condition: '>= 10', result: '你有一些积蓄。' },
+  ]}
+  fallback="你几乎身无分文。"
+/>
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+多重条件
+
+:: Start
+<<set $gold = 15>>
+你有 $gold 枚金币。
+
+<<if $gold >= 50>>
+你非常富有！
+<<elseif $gold >= 10>>
+你有一些积蓄。
+<<else>>
+你几乎身无分文。
+<</if>>
+`} />
+
+## 练习
+
+### 练习 1：商店门槛
+
+玩家有 `$gold` 枚金币。如果金币 >= 10，显示「欢迎光临」和购买链接；否则显示「你的钱不够」。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+练习1
+
+:: Start
+<<set $gold = 5>>
+你有 $gold 枚金币。
+
+[[进入商店|Shop]]
+
+:: Shop
+/* 在这里添加条件判断 */
+`} />
+
+### 练习 2：多结局
+
+根据 `$karma` 的值显示不同结局：>= 10 好结局，>= 0 普通结局，< 0 坏结局。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+练习2
+
+:: Start
+<<set $karma = 0>>
+
+[[帮助老人 (+5)|Help]]
+[[偷窃商店 (-8)|Steal]]
+[[直接前往结局|Ending]]
+
+:: Help
+<<set $karma += 5>>
+你帮助了一位老人。善良值：$karma
+[[继续|Start]]
+
+:: Steal
+<<set $karma -= 8>>
+你偷了商店的东西。善良值：$karma
+[[继续|Start]]
+
+:: Ending
+你的善良值：$karma
+/* 在这里用 <<if>>/<<elseif>>/<<else>> 显示不同结局 */
+`} />
+
+### 练习 3：钥匙与宝箱
+
+房间里有一把钥匙和一个宝箱。玩家需要先拿到钥匙（`$hasKey`），才能打开宝箱。如果没有钥匙就尝试开箱，提示「宝箱打不开」。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+练习3
+
+:: Start
+<<set $hasKey = false>>
+房间里有一把钥匙和一个宝箱。
+
+[[捡起钥匙|Key]]
+[[打开宝箱|Chest]]
+
+:: Key
+/* 在这里设置 $hasKey */
+[[回到房间|Start]]
+
+:: Chest
+/* 在这里判断 $hasKey，用 ! 取反 */
+`} />

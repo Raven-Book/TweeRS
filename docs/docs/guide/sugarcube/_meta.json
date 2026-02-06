@@ -1,0 +1,9 @@
+[
+  { "type": "file", "name": "index", "label": "介绍" },
+  { "type": "file", "name": "markup", "label": "文本与排版" },
+  { "type": "file", "name": "links", "label": "链接与导航" },
+  { "type": "file", "name": "macros", "label": "宏" },
+  { "type": "file", "name": "variables", "label": "变量" },
+  { "type": "file", "name": "conditional", "label": "条件分支" },
+  { "type": "file", "name": "loops", "label": "循环" }
+]

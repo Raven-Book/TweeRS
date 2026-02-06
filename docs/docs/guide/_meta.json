@@ -4,6 +4,25 @@
   { "type": "file", "name": "installation", "label": "安装" },
   { "type": "file", "name": "quick-start", "label": "快速开始" },
   { "type": "file", "name": "vscode", "label": "VSCode 插件" },
-  { "type": "file", "name": "excel", "label": "扩展功能: 数据表" },
-  { "type": "file", "name": "scripts", "label": "扩展功能: 脚本注入" }
+  {
+    "type": "dir",
+    "name": "extensions",
+    "label": "扩展功能",
+    "collapsible": true,
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "sugarcube",
+    "label": "方糖教程",
+    "collapsible": true,
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "harlowe",
+    "label": "哈洛教程",
+    "collapsible": true,
+    "collapsed": true
+  }
 ]

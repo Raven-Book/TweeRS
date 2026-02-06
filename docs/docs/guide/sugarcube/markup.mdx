@@ -1,0 +1,55 @@
+# 文本与排版
+
+import { TweePlayground } from '@/components';
+
+SugarCube 使用自己的标记语法来格式化文本，和 Markdown 类似但不完全相同。
+
+## 粗体与斜体
+
+- `''文本''` — 粗体（两个单引号）
+- `//文本//` — 斜体
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+排版示例
+
+:: Start
+这是''粗体''文本。
+
+这是//斜体//文本。
+
+这是''//粗体加斜体//''文本。
+`} />
+
+## 更多格式
+
+- `__文本__` — 下划线
+- `==文本==` — 删除线
+- `^^文本^^` — 上标
+- `~~文本~~` — 下标
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+格式示例
+
+:: Start
+__下划线__
+
+==删除线==
+
+正常文本^^上标^^
+
+正常文本~~下标~~
+`} />

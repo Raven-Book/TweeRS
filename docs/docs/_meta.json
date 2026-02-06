@@ -6,12 +6,12 @@
   },
   {
     "text": "Excel 模板",
-    "link": "/guide/excel/",
-    "activeMatch": "/guide/excel/"
+    "link": "/guide/extensions/excel/",
+    "activeMatch": "/guide/extensions/excel/"
   },
   {
     "text": "脚本注入",
-    "link": "/guide/scripts/",
-    "activeMatch": "/guide/scripts/"
+    "link": "/guide/extensions/scripts/",
+    "activeMatch": "/guide/extensions/scripts/"
   }
 ]
