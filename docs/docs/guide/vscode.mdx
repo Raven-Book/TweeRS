@@ -1,11 +1,12 @@
 import { TemplateDownload } from '@/components';
+import { FileLink } from '@/components/FileLink';
 
 # VSCode 插件
 
 Tweers Dev Tool 是 TweeRS 的 Visual Studio Code 插件，提供实时预览、段落导航、构建输出等功能，让你在编辑器内完成故事开发的完整流程。
 
 :::tip 前置条件
-请确保已完成 [安装](/guide/installation)，包括 TweeRS 命令行程序和 VSCode 插件。
+请确保已完成 [安装](/guide/installation)，包括 VSCode 插件。
 :::
 
 ## 激活条件
@@ -32,6 +33,25 @@ Tweers Dev Tool 是 TweeRS 的 Visual Studio Code 插件，提供实时预览、
 └── .storyformats/                # 故事格式（自动创建）
     └── 故事格式-版本号/
         └── format.js
+```
+
+---
+
+### 下载项目模板
+
+选择一个故事格式，下载包含示例故事和故事格式文件的模板项目：
+
+<TemplateDownload />
+
+解压后的目录结构：
+
+```
+demo/
+├── .storyformats/
+│   └── sugarcube-2.37.3/    # 故事格式（取决于你的选择）
+│       └── format.js
+└── src/
+    └── index.tw             # 示例故事文件
 ```
 
 ## 实时预览
@@ -75,9 +95,12 @@ Tweers Dev Tool 是 TweeRS 的 Visual Studio Code 插件，提供实时预览、
 - 点击段落可跳转到对应文件位置
 
 **从指定段落运行**
-- 右键点击任意段落（特殊段落除外），选择 `Run from here`
+- 选择任意段落（特殊段落除外），点击 `Run from here`
 - 将该段落设为故事起点，重新构建预览
 - 当前起点段落会显示黄色星标图标
+
+<FileLink src="imgs/vscode/插件图-1.png" />
+<FileLink src="imgs/vscode/插件图-2.png"/>
 
 :::tip
 `StoryData` 和 `StoryTitle` 是特殊段落，不支持「从此处运行」。
@@ -136,22 +159,3 @@ Tweers Dev Tool 是 TweeRS 的 Visual Studio Code 插件，提供实时预览、
 ```
 
 如果格式文件缺失，构建时会报错。
-
-### 下载项目模板
-
-选择一个故事格式，下载包含示例故事和故事格式文件的模板项目：
-
-<TemplateDownload />
-
----
-
-解压后的目录结构：
-
-```
-demo/
-├── .storyformats/
-│   └── sugarcube-2.37.3/    # 故事格式（取决于你的选择）
-│       └── format.js
-└── src/
-    └── index.tw             # 示例故事文件
-```
