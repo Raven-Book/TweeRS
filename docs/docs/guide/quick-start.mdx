@@ -3,7 +3,7 @@
 import { Steps } from '@theme';
 import { TweePlayground } from '@/components';
 
-本指南将带你从零创建一个互动小说项目，并用 TweeRS 编译成可运行的 HTML 游戏。
+本指南将带你从零创建一个 Twine 故事，并用 TweeRS 编译成可运行的 HTML 文件。
 
 :::tip 前置条件
 请确保已完成 [安装](/guide/installation)，并了解 [核心概念](/guide/concepts)。
@@ -70,7 +70,7 @@ import { TweePlayground } from '@/components';
   tweers build src/ -o game.html
   ```
 
-  构建完成后，用浏览器打开 `game.html` 即可游玩你的互动小说。
+  构建完成后，用浏览器打开 `game.html` 即可游玩你的 Twine 故事。
 </Steps>
 
 ## 在线预览
@@ -126,23 +126,23 @@ tweers build story/ -o game.html -w
 
 ## 多文件组织
 
-随着故事变长，你可以将段落拆分到多个 `.twee` 文件中。TweeRS 会自动合并目录下所有 `.twee` 和 `.tw` 文件：
+随着故事变长，你可以将片段拆分到多个 `.twee` 文件中。TweeRS 会自动合并目录下所有 `.twee` 和 `.tw` 文件：
 
 ```
 my-story/
 ├── src/
 │   ├── main.twee        # StoryTitle、StoryData 和 Start
-│   ├── chapter1.twee    # 第一章的段落
-│   └── chapter2.twee    # 第二章的段落
+│   ├── chapter1.twee    # 第一章的片段
+│   └── chapter2.twee    # 第二章的片段
 └── game.html            # 构建输出
 ```
 
 :::tip
-只需在一个文件中定义 `StoryTitle` 和 `StoryData`，其余文件只写段落即可。
+只需在一个文件中定义 `StoryTitle` 和 `StoryData`，其余文件只写片段即可。
 :::
 
 ## 下一步
 
-- [VSCode 插件](/guide/vscode) — 在编辑器内实时预览、段落导航与构建
+- [VSCode 插件](/guide/vscode) — 在编辑器内实时预览、片段导航与构建
 - [扩展功能: 数据表](/guide/extensions/excel) — 从 Excel 导入数据到游戏中
 - [扩展功能: 脚本注入](/guide/extensions/scripts) — 自定义构建流程

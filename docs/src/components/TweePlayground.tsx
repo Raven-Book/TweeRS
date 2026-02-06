@@ -37,16 +37,23 @@ function replaceIFID(code: string): string {
 }
 
 // 替换 StoryData 中的故事格式
-function replaceStoryFormat(code: string, name: string, version: string): string {
+function replaceStoryFormat(
+  code: string,
+  name: string,
+  version: string,
+): string {
   let result = code;
   // 替换 format
   result = result.replace(/"format":\s*"[^"]*"/i, `"format": "${name}"`);
   // 替换 format-version
-  result = result.replace(/"format-version":\s*"[^"]*"/i, `"format-version": "${version}"`);
+  result = result.replace(
+    /"format-version":\s*"[^"]*"/i,
+    `"format-version": "${version}"`,
+  );
   return result;
 }
 
-// 从 Twee 代码中分离 StoryTitle 和 StoryData 段落
+// 从 Twee 代码中分离 StoryTitle 和 StoryData 片段
 function splitStoryHeader(code: string): { header: string; body: string } {
   const passages = code.split(/^(?=:: )/m);
   const headerParts: string[] = [];
@@ -76,7 +83,11 @@ function getCurrentFormat(code: string): string {
   return '';
 }
 
-export function TweePlayground({ code, height = '280px', hideStoryHeader = false }: Props) {
+export function TweePlayground({
+  code,
+  height = '280px',
+  hideStoryHeader = false,
+}: Props) {
   const [storyHeader] = useState(() => {
     if (!hideStoryHeader) return '';
     return splitStoryHeader(replaceIFID(code.trim())).header;
@@ -89,7 +100,9 @@ export function TweePlayground({ code, height = '280px', hideStoryHeader = false
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
   const [isDebug, setIsDebug] = useState(false);
-  const [availableFormats, setAvailableFormats] = useState<AvailableFormat[]>([]);
+  const [availableFormats, setAvailableFormats] = useState<AvailableFormat[]>(
+    [],
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // 扫描可用的故事格式

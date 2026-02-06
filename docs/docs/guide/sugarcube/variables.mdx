@@ -47,7 +47,7 @@ import { AssignmentVisualizer } from '@/teaching';
 
 ## 临时变量
 
-以 `_` 开头的变量只在当前段落有效，离开段落后自动消失：
+以 `_` 开头的变量只在当前片段有效，离开片段后自动消失：
 
 ```twee
 :: Start
@@ -55,7 +55,7 @@ import { AssignmentVisualizer } from '@/teaching';
 _greeting，欢迎来到游戏！
 ```
 
-临时变量适合存放只在当前段落用到的数值，不会污染存档变量。
+临时变量适合存放只在当前片段用到的数值，不会污染存档变量。
 
 ## 常用操作
 
@@ -97,5 +97,5 @@ _greeting，欢迎来到游戏！
 `} />
 
 :::tip 提示
-你需要在 `Adventure` 段落中添加一行 `<<set>>` 来扣减血量。
+你需要在 `Adventure` 片段中添加一行 `<<set>>` 来扣减血量。
 :::
