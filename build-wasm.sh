@@ -12,6 +12,9 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}=== TweeRS WASM Build Script ===${NC}"
 echo ""
 
+# Store the script's directory (project root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Check if wasm-pack is installed
 if ! command -v wasm-pack &> /dev/null; then
     echo -e "${RED}Error: wasm-pack is not installed${NC}"
@@ -61,14 +64,23 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Resolve output directory to absolute path
+if [[ "$OUT_DIR" = /* ]]; then
+    # Already absolute path
+    OUT_DIR_ABS="$OUT_DIR"
+else
+    # Relative path - resolve from script directory
+    OUT_DIR_ABS="$SCRIPT_DIR/$OUT_DIR"
+fi
+
 echo -e "${GREEN}Building with:${NC}"
 echo "  Target: $TARGET"
 echo "  Profile: $PROFILE"
-echo "  Output: $OUT_DIR"
+echo "  Output: $OUT_DIR_ABS"
 echo ""
 
 # Navigate to core crate
-cd crates/core
+cd "$SCRIPT_DIR/crates/core"
 
 # Build command - wasm-pack outputs to pkg/ by default
 BUILD_CMD="wasm-pack build --target $TARGET --features wasm"
@@ -86,16 +98,16 @@ eval $BUILD_CMD
 
 # Move output to target directory
 echo ""
-echo -e "${YELLOW}Moving output to ../../$OUT_DIR${NC}"
-mkdir -p "../../$OUT_DIR"
-rm -rf "../../$OUT_DIR"/*
-cp -r pkg/* "../../$OUT_DIR/"
+echo -e "${YELLOW}Moving output to $OUT_DIR_ABS${NC}"
+mkdir -p "$OUT_DIR_ABS"
+rm -rf "$OUT_DIR_ABS"/*
+cp -r pkg/* "$OUT_DIR_ABS/"
 rm -rf pkg
 
 # Replace auto-generated TypeScript definitions with custom ones
 echo -e "${YELLOW}Replacing TypeScript definitions with custom types${NC}"
 if [ -f "src/wasm/tweers_core.d.ts" ]; then
-    cp src/wasm/tweers_core.d.ts "../../$OUT_DIR/tweers_core.d.ts"
+    cp src/wasm/tweers_core.d.ts "$OUT_DIR_ABS/tweers_core.d.ts"
     echo -e "${GREEN}✓ Custom TypeScript definitions applied${NC}"
 else
     echo -e "${YELLOW}⚠ Custom TypeScript definitions not found, using auto-generated${NC}"
@@ -103,7 +115,7 @@ fi
 
 echo ""
 echo -e "${GREEN}✓ Build completed successfully!${NC}"
-echo -e "Output directory: ${YELLOW}$OUT_DIR${NC}"
+echo -e "Output directory: ${YELLOW}$OUT_DIR_ABS${NC}"
 echo ""
 echo "Files generated:"
-ls -lh "../../$OUT_DIR" | grep -E '\.(js|wasm|ts)$' || true
+ls -lh "$OUT_DIR_ABS" | grep -E '\.(js|wasm|ts)$' || true
