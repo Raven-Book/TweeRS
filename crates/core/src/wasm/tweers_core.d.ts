@@ -6,7 +6,7 @@
  */
 export type JsInputSource =
   | { type: "text"; name: string; content: string }
-  | { type: "bytes"; name: string; data: Uint8Array; mime_type?: string };
+  | { type: "bytes"; name: string; data: number[]; mime_type?: string };
 
 /**
  * Story format information
@@ -109,3 +109,11 @@ export function passages(sources_js: JsInputSource[]): Map<string, JsPassage>;
  * Initialize panic hook for better error messages in browser console
  */
 export function init_panic_hook(): void;
+
+/**
+ * Sort file paths: deeper paths first, then natural sort within same depth
+ *
+ * @param paths - Array of file path strings
+ * @returns Sorted array of file path strings
+ */
+export function sort_paths(paths: string[]): string[];
