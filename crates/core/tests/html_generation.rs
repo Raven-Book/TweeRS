@@ -97,6 +97,25 @@ fn test_passages_api() {
 }
 
 #[test]
+fn test_non_ascii_tags() {
+    use tweers_core::api::{InputSource, passages};
+
+    let content = ":: Start [你好 世界]\nHello\n\n:: Second [café naïve]\nWorld";
+    let sources = vec![InputSource::Text {
+        name: "test.twee".to_string(),
+        content: content.to_string(),
+    }];
+
+    let result = passages(sources);
+    assert!(result.is_ok(), "non-ASCII tags failed: {:?}", result.err());
+
+    let passages = result.unwrap();
+    assert_eq!(passages.len(), 2);
+    assert_eq!(passages["Start"].tags.as_deref(), Some("你好 世界"));
+    assert_eq!(passages["Second"].tags.as_deref(), Some("café naïve"));
+}
+
+#[test]
 fn test_start_passage_override() {
     use tweers_core::api::{BuildConfig, InputSource, StoryFormatInfo, build};
 
