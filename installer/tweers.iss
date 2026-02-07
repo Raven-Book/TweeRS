@@ -10,7 +10,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={localappdata}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputBaseFilename=TweeRS-{#MyAppVersion}-setup
@@ -18,7 +18,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=yes
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -31,7 +31,7 @@ Source: "..\test\story-format\*"; DestDir: "{app}\story-format"; Flags: ignoreve
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Registry]
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+Root: HKCU; Subkey: "Environment"; \
     ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
     Check: NeedsAddPath('{app}')
 
@@ -40,8 +40,8 @@ function NeedsAddPath(Param: string): boolean;
 var
     OrigPath: string;
 begin
-    if not RegQueryStringValue(HKLM,
-        'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+    if not RegQueryStringValue(HKCU,
+        'Environment',
         'Path', OrigPath)
     then begin
         Result := True;
