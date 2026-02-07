@@ -1,8 +1,49 @@
 # 片段
 
 import { TweePlayground } from '@/components';
+import { PassageVisualizer } from '@/teaching';
 
-片段（Passage）是 Twine 故事的基本单位。每个片段是一块独立的内容，玩家在片段之间跳转来推进故事。
+一个故事由多个**片段**（Passage）组成。每个片段是一块独立的内容，玩家通过链接在片段之间跳转。
+
+<PassageVisualizer
+  nodes={[
+    { id: 'start', title: 'Start', content: ['你站在岔路口。', '[[进入森林]]', '[[走进山洞]]'], x: 0, y: 50 },
+    { id: 'forest', title: '进入森林', content: ['树林里很安静。', '[[回到岔路口|Start]]'], x: 250, y: 0 },
+    { id: 'cave', title: '走进山洞', content: ['山洞里很黑。', '[[回到岔路口|Start]]'], x: 250, y: 120 },
+  ]}
+  edges={[
+    { id: 'e1', source: 'start', target: 'forest', label: '进入森林' },
+    { id: 'e2', source: 'start', target: 'cave', label: '走进山洞' },
+    { id: 'e3', source: 'forest', target: 'start', label: '回到岔路口' },
+    { id: 'e4', source: 'cave', target: 'start', label: '回到岔路口' },
+  ]}
+  steps={[
+    {
+      visibleNodes: ['start'],
+      visibleEdges: [],
+      activeNode: 'start',
+      description: '故事从 Start 片段开始，显示岔路口的内容',
+    },
+    {
+      visibleNodes: ['start', 'forest', 'cave'],
+      visibleEdges: ['e1', 'e2'],
+      activeNode: 'start',
+      description: '片段里的链接指向其他片段——点击就能跳转',
+    },
+    {
+      visibleNodes: ['start', 'forest', 'cave'],
+      visibleEdges: ['e1', 'e2', 'e3'],
+      activeNode: 'forest',
+      description: '玩家点击「进入森林」，跳转到森林片段',
+    },
+    {
+      visibleNodes: ['start', 'forest', 'cave'],
+      visibleEdges: ['e1', 'e2', 'e3', 'e4'],
+      activeNode: 'start',
+      description: '片段之间可以互相跳转，形成故事的网状结构',
+    },
+  ]}
+/>
 
 ## 片段的写法
 

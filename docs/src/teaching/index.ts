@@ -4,3 +4,4 @@ export { ConditionVisualizer } from './ConditionVisualizer';
 export { LoopVisualizer } from './LoopVisualizer';
 export { ObjectArrayVisualizer } from './ObjectArrayVisualizer';
 export { ObjectVisualizer } from './ObjectVisualizer';
+export { PassageVisualizer } from './PassageVisualizer';
