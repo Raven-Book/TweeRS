@@ -50,8 +50,11 @@ jobs:
           Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "innosetup-installer.exe"
           Start-Process -FilePath ".\innosetup-installer.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
 
+          # 从 Cargo.toml 提取版本号
+          $version = (Select-String -Path "crates\cli\Cargo.toml" -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
+
           # 编译安装包
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\tweers.iss"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" "installer\tweers.iss"
 
           # 移动安装包到 archive 目录
           Move-Item "installer\Output\TweeRS-*-setup.exe" "archive\TweeRS-setup.exe"

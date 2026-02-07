@@ -1,5 +1,7 @@
 #define MyAppName "TweeRS"
-#define MyAppVersion "1.0.1"
+#ifndef MyAppVersion
+  #error "MyAppVersion must be defined via /D flag: iscc /DMyAppVersion=x.y.z tweers.iss"
+#endif
 #define MyAppPublisher "Raven-Book"
 #define MyAppURL "https://github.com/Raven-Book/TweeRS"
 #define MyAppExeName "tweers.exe"

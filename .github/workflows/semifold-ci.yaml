@@ -115,7 +115,8 @@ jobs:
           Copy-Item "target\${{ matrix.platform.target }}\release\tweers.exe" "installer\"
           Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "innosetup-installer.exe"
           Start-Process -FilePath ".\innosetup-installer.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\tweers.iss"
+          $version = (Select-String -Path "crates\cli\Cargo.toml" -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" "installer\tweers.iss"
           Move-Item "installer\Output\TweeRS-*-setup.exe" "archive\tweers-setup-x86_64.exe"
 
       - name: Upload archive
