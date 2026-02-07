@@ -299,9 +299,9 @@ Continue示例
 
 ## `<<capture>>`
 
-在循环里使用 `<<link>>` 等交互宏时，会遇到一个问题：点击时循环已经结束，临时变量的值是循环结束后的最终值，而不是创建链接时的值。
+在循环里用 `<<link>>` 或 `<<button>>` 生成多个链接/按钮时，会遇到一个问题：在**点击时**才读取变量的值，而那时循环早已结束，变量停留在最后一次的值。
 
-先看问题——点击任意一个链接，弹出的都是最后一个水果：
+先看问题——点击任意一个链接，显示的都是最后一个水果：
 
 <TweePlayground hideStoryHeader code={`:: StoryData
 {
@@ -323,7 +323,7 @@ capture问题
 <span id="result"></span>
 `} />
 
-`<<capture>>` 可以把变量的当前值"锁住"，让交互宏记住创建时的值：
+`<<capture>>` 可以把变量的当前值"锁住"，让每个链接记住自己创建时的值：
 
 <TweePlayground hideStoryHeader code={`:: StoryData
 {
@@ -347,7 +347,7 @@ capture修复
 <span id="result"></span>
 `} />
 
-规则很简单：在循环里用 `<<link>>`、`<<button>>` 等交互宏时，用 `<<capture>>` 包裹并列出用到的临时变量。
+规则很简单：在循环里用 `<<link>>` 或 `<<button>>` 时，用 `<<capture>>` 包裹并列出用到的临时变量。
 
 ## 练习
 
