@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.5
+
+### Bug Fixes
+
+- [`2b7bdfe`](https://github.com/Raven-Book/TweeRS/commit/2b7bdfebb9f2c9dd23bf23823edc17d4e04e5d2f): Fix passage header parsing panic when tags contain non-ASCII characters (e.g. Chinese)
+
 ## v1.0.4
 
 ### Bug Fixes

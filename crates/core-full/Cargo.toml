@@ -1,13 +1,13 @@
 [package]
 name = "tweers-core-full"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 description = "TweeRS core with I/O operations for desktop/Tauri applications"
 license = "MIT"
 publish = false
 
 [dependencies]
-tweers-core = { path = "../core", version = "1.0.3" }
+tweers-core = { path = "../core", version = "1.0.4" }
 tokio = { version = "1.45.1", features = ["full"] }
 notify = "8.0.0"
 reqwest = { version = "0.12", features = ["blocking"] }
