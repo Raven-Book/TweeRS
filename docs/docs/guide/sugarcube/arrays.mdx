@@ -1,0 +1,165 @@
+# 数组
+
+import { TweePlayground } from '@/components';
+import { ArrayVisualizer } from '@/teaching';
+
+**数组**是一组有序的值，用方括号 `[]` 创建。适合存放物品列表、技能列表等同类数据。
+
+<ArrayVisualizer
+  variable="$inventory"
+  steps={[
+    {
+      code: '<<set $inventory = ["剑", "盾牌", "药水"]>>',
+      description: '创建一个包含 3 个元素的数组',
+      array: ['剑', '盾牌', '药水'],
+    },
+    {
+      code: '$inventory[0]',
+      description: '索引从 0 开始，第一个元素是"剑"',
+      array: ['剑', '盾牌', '药水'],
+      highlight: 0,
+    },
+    {
+      code: '$inventory[2]',
+      description: '索引 2 对应第三个元素"药水"',
+      array: ['剑', '盾牌', '药水'],
+      highlight: 2,
+    },
+    {
+      code: '$inventory.push("弓")',
+      description: '在末尾添加新元素"弓"',
+      array: ['剑', '盾牌', '药水', '弓'],
+      added: 3,
+    },
+    {
+      code: '$inventory.deleteAt(1)',
+      description: '删除索引 1 的元素"盾牌"',
+      array: ['剑', '盾牌', '药水', '弓'],
+      removed: 1,
+    },
+    {
+      code: '$inventory.deleteAt(1)',
+      description: '删除后，后面的元素索引自动前移',
+      array: ['剑', '药水', '弓'],
+    },
+    {
+      code: '$inventory.length',
+      description: '数组当前有 3 个元素',
+      array: ['剑', '药水', '弓'],
+    },
+    {
+      code: '$inventory.includes("药水")',
+      description: '检查是否包含"药水"→ true',
+      array: ['剑', '药水', '弓'],
+      highlight: 1,
+    },
+  ]}
+/>
+
+## 创建数组
+
+```twee
+<<set $inventory = ["剑", "盾牌", "药水"]>>
+```
+
+数组中的每个值叫做**元素**，元素之间用逗号分隔。
+
+## 访问元素
+
+用**索引**访问数组中的元素，索引从 `0` 开始：
+
+| 写法 | 结果 |
+|------|------|
+| `$inventory[0]` | "剑" |
+| `$inventory[1]` | "盾牌" |
+| `$inventory[2]` | "药水" |
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+数组示例
+
+:: Start
+<<set $inventory = ["剑", "盾牌", "药水"]>>
+第一件物品：$inventory[0]
+第二件物品：$inventory[1]
+第三件物品：$inventory[2]
+`} />
+
+## 常用操作
+
+| 写法 | 含义 |
+|------|------|
+| `$inventory.length` | 数组长度（元素个数） |
+| `$inventory.push("弓")` | 在末尾添加元素 |
+| `$inventory.deleteAt(1)` | 删除索引 1 的元素 |
+| `$inventory.includes("剑")` | 是否包含某个元素 |
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+数组操作
+
+:: Start
+<<set $inventory = ["剑", "盾牌"]>>
+背包：<<= $inventory.join("、")>>（共 $inventory.length 件）
+
+<<run $inventory.push("药水")>>
+捡到药水后：<<= $inventory.join("、")>>
+
+[[查看背包|Check]]
+
+:: Check
+<<if $inventory.includes("剑")>>
+你手持利剑，信心十足。
+<<else>>
+你手无寸铁。
+<</if>>
+`} />
+
+## 练习
+
+玩家有一个空背包 `$bag`。在房间里可以捡起不同物品，最后显示背包中的所有物品。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+数组练习
+
+:: StoryInit
+<<set $bag = []>>
+
+:: Start
+房间里散落着一些物品。
+
+[[捡起钥匙|PickKey]]
+[[捡起火把|PickTorch]]
+[[查看背包|ShowBag]]
+
+:: PickKey
+/* 用 push 把 "钥匙" 加入 $bag */
+[[返回|Start]]
+
+:: PickTorch
+/* 用 push 把 "火把" 加入 $bag */
+[[返回|Start]]
+
+:: ShowBag
+你的背包里有 $bag.length 件物品。
+/* 用 join 显示所有物品 */
+`} />

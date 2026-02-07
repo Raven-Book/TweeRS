@@ -1,0 +1,67 @@
+# 特殊片段：StoryInit
+
+import { TweePlayground } from '@/components';
+
+之前我们把 `<<set>>` 写在 `Start` 片段里。但如果玩家从其他片段跳回 `Start`，变量会被重新赋值，之前的修改全部丢失。
+
+点击下面的「花 30 金币」，再点「回到起点」——你会发现金币又变回 100 了：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+重置问题
+
+:: Start
+<<set $gold = 100>>
+你有 $gold 金币。
+[[花 30 金币|Spend]]
+
+:: Spend
+<<set $gold -= 30>>
+花掉了 30 金币，剩余 $gold。
+[[回到起点|Start]]
+`} />
+
+## StoryInit
+
+`StoryInit` 是一个特殊片段，只在**故事开始时执行一次**。把变量初始化放在这里：
+
+```twee
+:: StoryInit
+<<set $gold = 100>>
+
+:: Start
+你有 $gold 金币。
+```
+
+同样的例子，把初始化移到 `StoryInit`——金币不会再被重置：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+StoryInit示例
+
+:: StoryInit
+<<set $gold = 100>>
+
+:: Start
+你有 $gold 金币。
+[[花 30 金币|Spend]]
+
+:: Spend
+<<set $gold -= 30>>
+花掉了 30 金币，剩余 $gold。
+[[回到起点|Start]]
+`} />
+
+从现在开始，所有变量初始化都应该写在 `StoryInit` 里。

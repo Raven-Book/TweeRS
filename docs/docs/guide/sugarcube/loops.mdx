@@ -1,15 +1,79 @@
 # 循环
 
 import { TweePlayground } from '@/components';
+import { LoopVisualizer } from '@/teaching';
 
-> [!warning]
-> 施工中🚧 
+循环用于重复生成内容。还记得对象数组章节里显示背包的写法吗？
 
-循环用于重复生成内容，比如显示物品列表或重复执行操作。
+```twee
+<<if $bag.length >= 1>>
+- $bag[0].name
+<</if>>
+<<if $bag.length >= 2>>
+- $bag[1].name
+<</if>>
+<<if $bag.length >= 3>>
+- $bag[2].name
+<</if>>
+```
 
-## `<<for>>` 基础用法
+物品越多，代码越长。循环可以让这段代码自动重复，不管有多少个元素。
 
-`<<for>>` 的语法和 JavaScript 的 `for` 循环类似：
+## 前置知识
+
+| 写法 | 含义 | 等价于 |
+|------|------|--------|
+| `_i++` | 自增 1 | `_i += 1` |
+| `_i--` | 自减 1 | `_i -= 1` |
+
+以 `_` 开头的变量是**临时变量**，只在当前片段有效，不会存入存档。循环中常用 `_i` 作为计数器。
+
+## 三段式循环
+
+`<<for>>` 最常用的形式，由三部分组成：
+
+| 部分 | 作用 | 示例 |
+|------|------|------|
+| 初始化 | 循环开始前执行一次 | `_i = 1` |
+| 条件 | 每次迭代前检查，为 true 继续 | `_i <= 3` |
+| 更新 | 每次迭代后执行 | `_i++` |
+
+```twee
+<<for _i = 1; _i <= 3; _i++>>
+  第 _i 行
+<</for>>
+```
+
+<LoopVisualizer
+  nodes={[
+    { id: 'init', label: '_i = 1', x: 0, y: 40 },
+    { id: 'cond', label: '_i <= 3 ?', x: 160, y: 40 },
+    { id: 'body', label: '输出：第 _i 行', x: 350, y: 40 },
+    { id: 'update', label: '_i++', x: 350, y: -40 },
+    { id: 'end', label: '循环结束', x: 160, y: 130 },
+  ]}
+  edges={[
+    { id: 'e1', source: 'init', target: 'cond' },
+    { id: 'e2', source: 'cond', target: 'body', label: 'true' },
+    { id: 'e3', source: 'body', target: 'update', sourceHandle: 'top-src', targetHandle: 'bottom-target' },
+    { id: 'e4', source: 'update', target: 'cond', sourceHandle: 'left-src', targetHandle: 'top' },
+    { id: 'e5', source: 'cond', target: 'end', label: 'false', sourceHandle: 'bottom-src', targetHandle: 'top' },
+  ]}
+  steps={[
+    { nodeId: 'init', label: '初始化：_i 设为 1', variables: { '_i': '1' } },
+    { nodeId: 'cond', label: '检查条件：1 <= 3 → true', variables: { '_i': '1' } },
+    { nodeId: 'body', label: '执行循环体', variables: { '_i': '1' } },
+    { nodeId: 'update', label: '更新：_i++ → _i 变为 2', variables: { '_i': '2' } },
+    { nodeId: 'cond', label: '检查条件：2 <= 3 → true', variables: { '_i': '2' } },
+    { nodeId: 'body', label: '执行循环体', variables: { '_i': '2' } },
+    { nodeId: 'update', label: '更新：_i++ → _i 变为 3', variables: { '_i': '3' } },
+    { nodeId: 'cond', label: '检查条件：3 <= 3 → true', variables: { '_i': '3' } },
+    { nodeId: 'body', label: '执行循环体', variables: { '_i': '3' } },
+    { nodeId: 'update', label: '更新：_i++ → _i 变为 4', variables: { '_i': '4' } },
+    { nodeId: 'cond', label: '检查条件：4 <= 3 → false', variables: { '_i': '4' } },
+    { nodeId: 'end', label: '条件不满足，循环结束', variables: { '_i': '4' } },
+  ]}
+/>
 
 <TweePlayground hideStoryHeader code={`:: StoryData
 {
@@ -27,4 +91,289 @@ import { TweePlayground } from '@/components';
 <</for>>
 `} />
 
-注意循环内使用临时变量 `_i`，避免污染全局状态。
+### 遍历数组
+
+用索引从 `0` 到 `length - 1` 逐个访问数组元素：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+遍历数组
+
+:: Start
+<<set $fruits = ["苹果", "香蕉", "橘子"]>>
+<<for _i = 0; _i < $fruits.length; _i++>>
+<<= _i + 1>>. <<= $fruits[_i]>>
+<</for>>
+`} />
+
+## 条件循环
+
+只写条件部分，省略初始化和更新。条件为 `true` 时持续执行：
+
+```twee
+<<for 条件>>
+  …
+<</for>>
+```
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+条件循环
+
+:: Start
+<<set $hp = 100>>
+<<for $hp > 0>>
+HP：$hp
+<<set $hp -= 30>>
+<</for>>
+HP 已耗尽。
+`} />
+
+## Range 循环
+
+用 `range` 直接遍历集合，不需要手动管理索引：
+
+```twee
+<<for _key, _value range 集合>>
+  …
+<</for>>
+```
+
+可以遍历数组、对象、整数、字符串等。
+
+### 遍历数组
+
+`range` 遍历数组时，可以同时拿到索引和元素值：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Range数组
+
+:: Start
+<<set $dwarves = ["Doc", "Dopey", "Bashful", "Grumpy"]>>
+<<for _i, _name range $dwarves>>
+<<= _i + 1>>. _name
+<</for>>
+`} />
+
+`_i` 是索引，`_name` 是元素值。比三段式写法更简洁。
+
+### 遍历整数
+
+`range` 后面跟一个整数，会从 `0` 遍历到 `n-1`：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Range整数
+
+:: Start
+<<for _v range 5>>
+第 <<= _v + 1>> 行
+<</for>>
+`} />
+
+### 遍历对象
+
+遍历对象时，`_key` 是属性名，`_value` 是属性值：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Range对象
+
+:: Start
+<<set $player = { name: "小明", hp: 100, level: 3 }>>
+<<for _key, _val range $player>>
+_key：_val
+<</for>>
+`} />
+
+## `<<break>>` 与 `<<continue>>`
+
+- `<<break>>`：立即终止整个循环
+- `<<continue>>`：跳过本次迭代，进入下一次
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Break与Continue
+
+:: Start
+<<set $items = ["石头", "钥匙", "木棍", "宝石"]>>
+寻找钥匙：
+<<for _i, _item range $items>>
+检查：_item
+<<if _item == "钥匙">>
+找到了！
+<<break>>
+<</if>>
+<</for>>
+`} />
+
+`<<continue>>` 跳过无用的元素：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Continue示例
+
+:: Start
+<<set $items = ["石头", "钥匙", "木棍", "宝石"]>>
+有用的物品：
+<<for _i, _item range $items>>
+<<if _item == "石头" || _item == "木棍">>
+<<continue>>
+<</if>>
+- _item
+<</for>>
+`} />
+
+## 遍历对象数组
+
+还记得对象数组章节里逐个写索引显示背包吗？用循环改写：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+遍历对象数组
+
+:: StoryInit
+<<set $bag = [
+  { name: "铁剑", count: 1, durability: 50 },
+  { name: "药水", count: 3, durability: null },
+  { name: "火把", count: 1, durability: 30 }
+]>>
+
+:: Start
+''背包''
+<<for _i, _item range $bag>>
+- _item.name ×_item.count<<if _item.durability != null>>（耐久：_item.durability）<</if>>
+<</for>>
+`} />
+
+不管背包里有多少物品，这几行代码都能全部显示。`_item` 是当前对象，直接用 `_item.name` 访问属性。
+
+## `<<capture>>`
+
+在循环里使用 `<<link>>` 等交互宏时，会遇到一个问题：点击时循环已经结束，临时变量的值是循环结束后的最终值，而不是创建链接时的值。
+
+先看问题——点击任意一个链接，弹出的都是最后一个水果：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+capture问题
+
+:: Start
+<<set $fruits = ["苹果", "香蕉", "橘子"]>>
+<<for _i, _fruit range $fruits>>
+  <<link _fruit>>
+    <<replace "#result">>你选了：_fruit<</replace>>
+  <</link>>
+<</for>>
+<span id="result"></span>
+`} />
+
+`<<capture>>` 可以把变量的当前值"锁住"，让交互宏记住创建时的值：
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+capture修复
+
+:: Start
+<<set $fruits = ["苹果", "香蕉", "橘子"]>>
+<<for _i, _fruit range $fruits>>
+  <<capture _fruit>>
+    <<link _fruit>>
+      <<replace "#result">>你选了：_fruit<</replace>>
+    <</link>>
+  <</capture>>
+<</for>>
+<span id="result"></span>
+`} />
+
+规则很简单：在循环里用 `<<link>>`、`<<button>>` 等交互宏时，用 `<<capture>>` 包裹并列出用到的临时变量。
+
+## 练习
+
+用循环实现一个商店：遍历 `$shop` 对象数组显示商品列表，玩家可以购买。购买时扣金币扣数量，数量为 0 的商品显示"售罄"。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+商店练习
+
+:: StoryInit
+<<set $shop = [
+  { name: "苹果", price: 5, count: 3 },
+  { name: "面包", price: 8, count: 2 },
+  { name: "奶酪", price: 12, count: 1 }
+]>>
+<<set $gold = 30>>
+
+:: Start
+金币：$gold
+
+/* 用 <<for>> 遍历 $shop，显示每个商品的名称、价格、数量 */
+/* 数量为 0 时显示"售罄"，否则显示购买链接 */
+`} />

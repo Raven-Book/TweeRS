@@ -1,0 +1,234 @@
+# 对象
+
+import { TweePlayground } from '@/components';
+import { ArrayVisualizer, ObjectVisualizer } from '@/teaching';
+
+**对象**用花括号 `{}` 创建，存放一组**键值对**。适合表示有多个属性的事物，比如角色、物品。
+
+## 为什么需要对象
+
+描述一个角色需要名字、血量、等级。最直接的做法是用三个变量：
+
+```twee
+<<set $name = "小明">>
+<<set $hp = 100>>
+<<set $level = 1>>
+```
+
+一个角色没问题。但如果有两个角色呢？
+
+```twee
+<<set $playerName = "小明">>
+<<set $playerHp = 100>>
+<<set $enemyName = "哥布林">>
+<<set $enemyHp = 50>>
+```
+
+角色越多，变量越乱，而且看不出哪些变量属于同一个角色。
+
+用数组打包呢？
+
+<ArrayVisualizer
+  variable="$player"
+  steps={[
+    {
+      code: '<<set $player = ["小明", 100, 1]>>',
+      description: '用数组存角色：名字、血量、等级',
+      array: ['小明', '100', '1'],
+    },
+    {
+      code: '$player[1]',
+      description: '100 是血量？等级？光看索引无法分辨',
+      array: ['小明', '100', '1'],
+      highlight: 1,
+    },
+  ]}
+/>
+
+数组只有索引，看不出每个值代表什么。对象用**键名**标记每个值：
+
+<ObjectVisualizer
+  variable="$player"
+  steps={[
+    {
+      code: '<<set $player = { name: "小明", hp: 100, level: 1 }>>',
+      description: '每个值都有名字，一目了然',
+      entries: [
+        { key: 'name', value: '小明' },
+        { key: 'hp', value: '100' },
+        { key: 'level', value: '1' },
+      ],
+    },
+    {
+      code: '$player.name',
+      description: '用点号 + 键名访问，不需要记索引',
+      entries: [
+        { key: 'name', value: '小明' },
+        { key: 'hp', value: '100' },
+        { key: 'level', value: '1' },
+      ],
+      highlight: 'name',
+    },
+    {
+      code: '$player.hp',
+      description: '直接用 .hp 就能拿到血量',
+      entries: [
+        { key: 'name', value: '小明' },
+        { key: 'hp', value: '100' },
+        { key: 'level', value: '1' },
+      ],
+      highlight: 'hp',
+    },
+    {
+      code: '<<set $player.hp -= 30>>',
+      description: '修改属性：血量从 100 减少到 70',
+      entries: [
+        { key: 'name', value: '小明' },
+        { key: 'hp', value: '70' },
+        { key: 'level', value: '1' },
+      ],
+      changed: 'hp',
+      prevValue: '100',
+    },
+    {
+      code: '<<set $player.level += 1>>',
+      description: '等级从 1 提升到 2',
+      entries: [
+        { key: 'name', value: '小明' },
+        { key: 'hp', value: '70' },
+        { key: 'level', value: '2' },
+      ],
+      changed: 'level',
+      prevValue: '1',
+    },
+    {
+      code: '<<set $player.hp = 100>>',
+      description: '直接赋值：血量恢复到 100',
+      entries: [
+        { key: 'name', value: '小明' },
+        { key: 'hp', value: '100' },
+        { key: 'level', value: '2' },
+      ],
+      changed: 'hp',
+      prevValue: '70',
+    },
+  ]}
+/>
+
+## 创建对象
+
+```twee
+<<set $player = { name: "小明", hp: 100, level: 1 }>>
+```
+
+每个键值对由**键**（属性名）和**值**组成，用冒号分隔，多个键值对之间用逗号分隔。
+
+## 访问属性
+
+用**点号**访问对象的属性：
+
+| 写法 | 结果 |
+|------|------|
+| `$player.name` | "小明" |
+| `$player.hp` | 100 |
+| `$player.level` | 1 |
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+对象示例
+
+:: Start
+<<set $player = { name: "小明", hp: 100, level: 1 }>>
+姓名：$player.name
+血量：$player.hp
+等级：$player.level
+`} />
+
+## 修改属性
+
+用点号赋值即可修改对象的属性：
+
+```twee
+<<set $player.hp -= 20>>
+<<set $player.level += 1>>
+```
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+修改属性
+
+:: StoryInit
+<<set $player = { name: "小明", hp: 100, level: 1 }>>
+
+:: Start
+$player.name Lv.$player.level　HP：$player.hp
+
+[[战斗|Fight]]
+[[休息|Rest]]
+
+:: Fight
+<<set $player.hp -= 30>>
+<<set $player.level += 1>>
+你击败了怪物，但受了伤。
+$player.name Lv.$player.level　HP：$player.hp
+[[返回|Start]]
+
+:: Rest
+<<set $player.hp = 100>>
+你休息了一晚，恢复了体力。
+HP：$player.hp
+[[返回|Start]]
+`} />
+
+## 练习
+
+创建一个 `$weapon` 对象，包含 `name`（名称）和 `damage`（伤害）两个属性。玩家可以选择不同武器，战斗时根据武器伤害扣减怪物血量。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+对象练习
+
+:: Start
+<<set $monsterHp = 50>>
+选择你的武器：
+
+[[木剑|PickWood]]
+[[铁剑|PickIron]]
+
+:: PickWood
+/* 创建 $weapon 对象：name "木剑"，damage 10 */
+[[战斗|Fight]]
+
+:: PickIron
+/* 创建 $weapon 对象：name "铁剑"，damage 25 */
+[[战斗|Fight]]
+
+:: Fight
+/* 用 $weapon.damage 扣减 $monsterHp */
+你用$weapon.name攻击了怪物！
+怪物剩余血量：$monsterHp
+
+<<if $monsterHp <= 0>>
+怪物被击败了！
+<<else>>
+[[再次攻击|Fight]]
+<</if>>
+`} />

@@ -1,0 +1,62 @@
+# 片段
+
+import { TweePlayground } from '@/components';
+
+片段（Passage）是 Twine 故事的基本单位。每个片段是一块独立的内容，玩家在片段之间跳转来推进故事。
+
+## 片段的写法
+
+在 Twee 代码中，用 `::` 开头来声明一个片段：
+
+```twee
+:: 片段名
+这里是片段的内容。
+```
+
+`::` 和片段名之间有一个空格。片段名之后的所有内容，直到下一个 `::` 之前，都属于这个片段。
+
+## 一个故事可以有多个片段
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+片段示例
+
+:: Start
+这是第一个片段。
+
+:: 第二个片段
+这是第二个片段。
+`} />
+
+## 特殊片段
+
+SugarCube 有一些特殊片段名，它们不会作为普通内容显示，而是在特定时机执行或填充左侧栏。
+
+| 片段 | 作用 |
+|------|------|
+| `StoryData` | 存放故事的元信息（格式、版本等） |
+| `StoryTitle` | 故事的标题，用于创建存档 ID，只能是纯文本 |
+| `StoryInit` | 故事开始前执行，用于初始化变量 |
+| `PassageReady` | 每次跳转，片段渲染**前**执行 |
+| `PassageHeader` | 插入到每个片段**开头** |
+| `PassageFooter` | 追加到每个片段**末尾** |
+| `PassageDone` | 每次跳转，片段显示**后**执行 |
+| `StoryBanner` | 填充左侧栏的横幅区域（标题上方） |
+| `StoryDisplayTitle` | 页面标题和左侧栏显示标题 |
+| `StorySubtitle` | 左侧栏副标题 |
+| `StoryAuthor` | 左侧栏作者署名 |
+| `StoryCaption` | 左侧栏说明区域，常用于显示额外信息 |
+| `StoryMenu` | 左侧栏菜单项（只显示其中的链接） |
+| `StoryInterface` | 替换 SugarCube 的默认 UI，内容作为原始 HTML |
+
+这些特殊片段在后续章节中会逐步用到，这里先了解即可。
+
+## 下一步
+
+片段里可以写什么？从 [文本与排版](/guide/sugarcube/markup) 开始学习。

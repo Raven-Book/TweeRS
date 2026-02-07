@@ -1,9 +1,14 @@
 [
   { "type": "file", "name": "index", "label": "介绍" },
+  { "type": "file", "name": "passages", "label": "片段" },
   { "type": "file", "name": "markup", "label": "文本与排版" },
   { "type": "file", "name": "links", "label": "链接与导航" },
   { "type": "file", "name": "macros", "label": "宏" },
   { "type": "file", "name": "variables", "label": "变量" },
   { "type": "file", "name": "conditional", "label": "条件分支" },
+  { "type": "file", "name": "arrays", "label": "数组" },
+  { "type": "file", "name": "objects", "label": "对象" },
+  { "type": "file", "name": "story-init", "label": "特殊片段：StoryInit" },
+  { "type": "file", "name": "object-arrays", "label": "对象数组" },
   { "type": "file", "name": "loops", "label": "循环" }
 ]

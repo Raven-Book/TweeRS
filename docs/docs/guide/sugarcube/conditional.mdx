@@ -113,7 +113,7 @@ import { ConditionVisualizer } from '@/teaching';
 
 ## 练习
 
-### 练习 1：商店门槛
+### 练习 1：商店
 
 玩家有 `$gold` 枚金币。如果金币 >= 10，显示「欢迎光临」和购买链接；否则显示「你的钱不够」。
 
@@ -151,8 +151,10 @@ import { ConditionVisualizer } from '@/teaching';
 :: StoryTitle
 练习2
 
-:: Start
+:: StoryInit
 <<set $karma = 0>>
+
+:: Start
 
 [[帮助老人 (+5)|Help]]
 [[偷窃商店 (-8)|Steal]]
@@ -187,8 +189,10 @@ import { ConditionVisualizer } from '@/teaching';
 :: StoryTitle
 练习3
 
-:: Start
+:: StoryInit
 <<set $hasKey = false>>
+
+:: Start
 房间里有一把钥匙和一个宝箱。
 
 [[捡起钥匙|Key]]
