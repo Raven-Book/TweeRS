@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.4
+
+### Bug Fixes
+
+- [`a80aa4b`](https://github.com/Raven-Book/TweeRS/commit/a80aa4bca004c61150f48164b2f220c04d6e7448): Fix wasm type declarations: correct `bytes` data type and add missing `sort_paths` export
+- [`2b7bdfe`](https://github.com/Raven-Book/TweeRS/commit/2b7bdfebb9f2c9dd23bf23823edc17d4e04e5d2f): Fix passage header parsing panic when tags contain non-ASCII characters (e.g. Chinese)
+
 ## v1.0.3
 
 ### Chores
