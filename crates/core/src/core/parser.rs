@@ -193,7 +193,7 @@ impl TweeParser {
         let mut i = 0;
         let remainder_chars: Vec<char> = remainder.chars().collect();
 
-        while i < remainder.len() {
+        while i < remainder_chars.len() {
             match remainder_chars[i] {
                 '[' => {
                     let (tag_content, end_pos) = Self::parse_bracket_block(&remainder_chars, i)?;
