@@ -1,0 +1,275 @@
+# Widget
+
+import { TweePlayground } from '@/components';
+import { WidgetVisualizer } from '@/teaching';
+
+前面学过的 `<<link>>`、`<<button>>`、`<<for>>` 等都是 SugarCube 内置的宏。Widget 让你**创建自己的宏**，把重复使用的代码封装起来，用一个名字调用。
+
+## 重复代码的问题
+
+假设游戏里经常需要显示角色状态：
+
+```twee
+HP：$hp / $maxHp
+MP：$mp / $maxMp
+等级：$level
+```
+
+每个需要显示状态的片段都要写一遍。如果以后要改格式（比如加上攻击力），每个地方都要改。Widget 可以解决这个问题——把这段代码封装成 `<<status>>`，需要时直接调用。
+
+## 创建第一个 Widget
+
+用 `<<widget>>` 定义自定义宏，放在带有 `[widget]` 标签的片段里：
+
+```twee
+:: MyWidgets [widget]
+<<widget "status">>
+HP：$hp / $maxHp
+MP：$mp / $maxMp
+等级：$level
+<</widget>>
+```
+
+定义好后，在任何片段里用 `<<status>>` 调用：
+
+```twee
+:: Start
+''角色状态''
+<<status>>
+```
+
+`<<status>>` 会被替换为 widget 内部的内容。
+
+<TweePlayground code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+基本Widget
+
+:: MyWidgets [widget]
+<<widget "status">>
+HP：$hp / $maxHp
+MP：$mp / $maxMp
+等级：$level
+<</widget>>
+
+:: StoryInit
+<<set $hp = 80>>
+<<set $maxHp = 100>>
+<<set $mp = 30>>
+<<set $maxMp = 50>>
+<<set $level = 3>>
+
+:: Start
+''角色状态''
+<<status>>
+
+<<button "升级">>
+  <<set $level += 1>>
+  <<set $maxHp += 20>>
+  <<set $hp = $maxHp>>
+  <<set $maxMp += 10>>
+  <<set $mp = $maxMp>>
+  <<goto "Start">>
+<</button>>
+`} />
+
+两个片段都用 `<<status>>` 显示状态，修改 widget 定义就能同时更新所有地方。
+
+## 传递参数
+
+上面的 `<<status>>` 只能显示固定的变量。如果想让 widget 更灵活——比如做一个通用的"打招呼"宏，对不同角色说不同的话——就需要传递参数。
+
+调用时在宏名后面写参数，widget 内部用 `_args[0]`、`_args[1]` 等按顺序读取：
+
+```twee
+:: MyWidgets [widget]
+<<widget "greet">>
+  _args[0] 说：「你好，_args[1]！」
+<</widget>>
+
+:: Start
+<<greet "小明" "小红">>
+```
+
+`_args[0]` 对应第一个参数 `"小明"`，`_args[1]` 对应第二个参数 `"小红"`。
+
+<WidgetVisualizer
+  name="greet"
+  definition={['_args[0] 说：「你好，_args[1]！」']}
+  steps={[
+    {
+      call: '<<greet "小明" "小红">>',
+      mappings: [
+        { placeholder: '_args[0]', value: '"小明"' },
+        { placeholder: '_args[1]', value: '"小红"' },
+      ],
+      result: ['小明 说：「你好，小红！」'],
+      description: '_args[0] 替换为第一个参数，_args[1] 替换为第二个参数',
+    },
+    {
+      call: '<<greet "老王" "小李">>',
+      mappings: [
+        { placeholder: '_args[0]', value: '"老王"' },
+        { placeholder: '_args[1]', value: '"小李"' },
+      ],
+      result: ['老王 说：「你好，小李！」'],
+      description: '同一个 widget，传不同参数就得到不同结果',
+    },
+  ]}
+/>
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+参数Widget
+
+:: MyWidgets [widget]
+<<widget "greet">>
+_args[0] 说：「你好，_args[1]！」
+<</widget>>
+
+:: Start
+<<greet "小明" "小红">>
+<<greet "老王" "小李">>
+`} />
+
+## 容器 Widget
+
+前面的 widget 都是**自闭合**的——`<<greet>>` 没有闭合标签。如果想让 widget 像 `<<link>>...<</link>>` 一样包裹内容，需要加上 `container` 关键字：
+
+```twee
+:: MyWidgets [widget]
+<<widget "box" container>>
+<div class="box">
+  _contents
+</div>
+<</widget>>
+```
+
+`container` 告诉 SugarCube 这个 widget 需要闭合标签。被包裹的内容通过 `_contents` 读取：
+
+```twee
+:: Start
+<<box>>
+  这段文字会出现在 box 里。
+<</box>>
+```
+
+参数和容器可以同时使用。下面做一个"对话框" widget，参数指定说话人，内容是对话文字：
+
+<WidgetVisualizer
+  name="say"
+  isContainer
+  definition={['「_args[0]」说：_contents']}
+  steps={[
+    {
+      call: '<<say "小明">>',
+      contents: '今天天气真好！',
+      mappings: [
+        { placeholder: '_args[0]', value: '"小明"' },
+        { placeholder: '_contents', value: '今天天气真好！' },
+      ],
+      result: ['「小明」说：今天天气真好！'],
+      description: '_args[0] 是参数，_contents 是被包裹的内容',
+    },
+    {
+      call: '<<say "小红">>',
+      contents: '是啊，出去走走吧。',
+      mappings: [
+        { placeholder: '_args[0]', value: '"小红"' },
+        { placeholder: '_contents', value: '是啊，出去走走吧。' },
+      ],
+      result: ['「小红」说：是啊，出去走走吧。'],
+      description: '同一个 widget，不同参数和内容',
+    },
+  ]}
+/>
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+容器Widget
+
+:: MyWidgets [widget]
+<<widget "say" container>>
+「_args[0]」说：_contents
+<</widget>>
+
+:: Start
+<<say "小明">>今天天气真好！<</say>>
+<<say "小红">>是啊，出去走走吧。<</say>>
+<<say "小明">>那我们去公园！<</say>>
+`} />
+
+## 注意事项
+
+:::warning
+Widget 必须定义在带有 `[widget]` 标签的片段里。
+:::
+
+一个 `[widget]` 片段里可以定义多个 widget：
+
+```twee
+:: MyWidgets [widget]
+<<widget "status">>
+  HP：$hp / $maxHp
+<</widget>>
+
+<<widget "greet">>
+  _args[0] 说：「你好！」
+<</widget>>
+```
+
+也可以用多个 `[widget]` 片段分类管理：
+
+```twee
+:: UIWidgets [widget]
+/* 界面相关的 widget */
+
+:: DialogWidgets [widget]
+/* 对话相关的 widget */
+```
+
+## 练习
+
+创建 `<<item>>` 容器 widget，用来显示物品信息卡片。参数是物品名称，内容是物品描述。再创建一个 `<<bag>>` widget（无参数），用循环遍历 `$bag` 数组，为每个物品调用 `<<item>>`。
+
+<TweePlayground code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Widget练习
+
+:: MyWidgets [widget]
+/* 在这里定义 <<item>> 和 <<bag>> */
+
+:: StoryInit
+<<set $bag = [
+  { name: "铁剑", desc: "一把普通的铁剑。" },
+  { name: "药水", desc: "恢复 50 HP。" },
+  { name: "地图", desc: "标记了宝藏的位置。" }
+]>>
+
+:: Start
+''背包''
+/* 用 <<bag>> 显示所有物品 */
+`} />

@@ -5,3 +5,4 @@ export { LoopVisualizer } from './LoopVisualizer';
 export { ObjectArrayVisualizer } from './ObjectArrayVisualizer';
 export { ObjectVisualizer } from './ObjectVisualizer';
 export { PassageVisualizer } from './PassageVisualizer';
+export { WidgetVisualizer } from './WidgetVisualizer';

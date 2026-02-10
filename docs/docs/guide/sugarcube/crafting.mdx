@@ -1,0 +1,425 @@
+# 合成系统
+
+import { TweePlayground } from '@/components';
+
+合成系统是常见的功能：把材料组合成新物品。这一章综合运用前面学过的对象数组、循环、条件分支和 Widget，实现完整的合成系统。
+
+## setup 对象
+
+配方表是固定数据——不管玩家怎么操作，"火把 = 木棍 + 布"的配方都不会变。这类数据不需要加进存档，适合放在 `setup` 对象里。
+
+`setup` 是 SugarCube 提供的全局对象，专门用来存放固定数据。在宏里可以直接用 `setup.xxx` 访问。
+
+```twee
+:: CraftingData [script]
+setup.recipes = {
+  "火把": { materials: [{ name: "木棍", count: 1 }, { name: "布", count: 1 }] }
+};
+```
+
+语法和之前学的对象几乎一样，区别只有两点：用 `=` 赋值（不用 `<<set>>`），结尾加 `;`。
+
+:::tip
+拥有 `[script]` 标签的片段是 SugarCube 提供的放置 js 代码的地方。如果使用 Twine，它有自己的 Javascript 编辑区域，不需要这个片段。如果使用 TweeRS，直接编写 `.js` 文件即可。
+:::
+
+## 设计配方表
+
+配方需要两个信息：合成结果的物品名，以及所需材料列表。用物品名做 key，材料列表做 value：
+
+```twee
+:: CraftingData [script]
+setup.recipes = {
+  "火把": {
+    materials: [
+      { name: "木棍", count: 1 },
+      { name: "布", count: 1 }
+    ]
+  },
+  "石斧": {
+    materials: [
+      { name: "木棍", count: 2 },
+      { name: "石头", count: 1 }
+    ]
+  }
+};
+```
+
+这是一个**嵌套结构**：`setup.recipes` 是对象，每个 key 是配方名，value 里的 `materials` 是一个对象数组。访问方式一层一层往下读：
+
+| 写法 | 结果 |
+|------|------|
+| `setup.recipes["火把"]` | 整个火把配方对象 |
+| `setup.recipes["火把"].materials` | 火把的材料数组 |
+| `setup.recipes["火把"].materials[0].name` | `"木棍"` |
+| `setup.recipes["火把"].materials[0].count` | `1` |
+
+## 设计背包
+
+背包是玩家数据，会随游戏变化，需要存入存档。放在 `StoryInit` 里初始化：
+
+```twee
+:: StoryInit
+<<set $bag = [
+  { name: "木棍", count: 5 },
+  { name: "布", count: 3 },
+  { name: "石头", count: 2 }
+]>>
+```
+
+和对象数组章节学过的结构一样——每个物品有名称和数量。
+
+## 显示背包 Widget
+
+显示背包内容会在多个地方用到，先封装成 widget：
+
+```twee
+:: CraftWidgets [widget]
+<<widget "showBag">><<nobr>>
+  <<for _i, _item range $bag>>
+    <<if _item.count > 0>>
+      _item.name ×_item.count <br>
+    <</if>>
+  <</for>>
+<</nobr>><</widget>>
+```
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+显示背包
+
+:: CraftWidgets [widget]
+<<widget "showBag">><<nobr>>
+  <<for _i, _item range $bag>>
+    <<if _item.count > 0>>
+      _item.name ×_item.count <br>
+    <</if>>
+  <</for>>
+<</nobr>><</widget>>
+
+:: StoryInit
+<<set $bag = [
+  { name: "木棍", count: 5 },
+  { name: "布", count: 3 },
+  { name: "石头", count: 2 }
+]>>
+
+:: Start
+''背包：''
+<<showBag>>
+`} />
+
+现在任何片段里写 `<<showBag>>` 就能显示背包，不用每次都写循环。
+
+## 检查材料是否足够
+
+一个配方有多种材料，需要**逐一检查**每种材料在背包里是否够用。思路是：先标记为"可合成"，然后遍历材料列表，只要有一种不够就标记为"不能合成"。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+检查材料
+
+:: CraftingData [script]
+setup.recipes = {
+  "火把": {
+    materials: [
+      { name: "木棍", count: 1 },
+      { name: "布", count: 1 }
+    ]
+  }
+};
+
+:: StoryInit
+<<set $bag = [
+  { name: "木棍", count: 5 },
+  { name: "石头", count: 2 }
+]>>
+
+:: Start [nobr]
+<<set _recipe = setup.recipes["火把"]>>
+检查配方：火把<br>
+
+<<set _canCraft = true>>
+<<for _mi, _mat range _recipe.materials>>
+  <<set _hasEnough = false>>
+  <<for _bi, _item range $bag>>
+    <<if _item.name == _mat.name && _item.count >= _mat.count>>
+      <<set _hasEnough = true>>
+      <<break>>
+    <</if>>
+  <</for>>
+  <<if !_hasEnough>>
+    ✗ _mat.name ×_mat.count — 不足<br>
+    <<set _canCraft = false>>
+  <<else>>
+    ✓ _mat.name ×_mat.count — 足够<br>
+  <</if>>
+<</for>>
+
+<<if _canCraft>>
+''可以合成！''
+<<else>>
+''材料不足，无法合成。''
+<</if>>
+`} />
+
+这里用了**嵌套循环**：外层遍历配方的材料列表，内层遍历背包查找对应物品。背包里没有"布"，所以检查失败。
+
+| 变量 | 作用 |
+|------|------|
+| `_canCraft` | 总开关，初始为 `true`，任何一种材料不足就设为 `false` |
+| `_hasEnough` | 单种材料的检查结果，每次外层循环重置为 `false` |
+
+## 合成 Widget
+
+确认材料足够后，合成分两步：
+
+1. **扣除材料**——遍历配方材料，在背包里找到对应物品，减少数量
+2. **添加结果**——如果背包里已有同名物品增加数量，否则新增元素
+
+这两步各封装成一个 widget，参数是配方名（即 `setup.recipes` 里的 key）。
+
+`<<consume>>` 扣除材料——内层循环用三段式 `<<for>>` 而不是 `range`，因为需通过 `$bag[_bi].count` 直接修改背包物品数量：
+
+```twee
+<<widget "consume">><<nobr>>
+  <<set _recipe = setup.recipes[_args[0]]>>
+  <<for _mi, _mat range _recipe.materials>>
+    <<for _bi = 0; _bi < $bag.length; _bi++>>
+      <<if $bag[_bi].name == _mat.name>>
+        <<set $bag[_bi].count -= _mat.count>>
+        <<break>>
+      <</if>>
+    <</for>>
+  <</for>>
+<</nobr>><</widget>>
+```
+
+`<<gain>>` 添加合成结果——找到同名物品就 `count += 1`，没找到就用 `.push()` 新增：
+
+```twee
+<<widget "gain">><<nobr>>
+  <<set _name = _args[0]>>
+  <<set _added = false>>
+  <<for _bi = 0; _bi < $bag.length; _bi++>>
+    <<if $bag[_bi].name == _name>>
+      <<set $bag[_bi].count += 1>>
+      <<set _added = true>>
+      <<break>>
+    <</if>>
+  <</for>>
+  <<if !_added>>
+    <<run $bag.push({ name: _name, count: 1 })>>
+  <</if>>
+<</nobr>><</widget>>
+```
+
+调用时写 `<<consume "火把">><<gain "火把">>` 就能执行火把配方的合成。
+
+## 完整示例
+
+把三个 widget 放进同一个 `[widget]` 片段，Start 片段只需关注"检查材料"和"显示按钮"的逻辑：
+
+<TweePlayground code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+合成系统
+
+:: CraftingData [script]
+setup.recipes = {
+  "火把": {
+    materials: [
+      { name: "木棍", count: 1 },
+      { name: "布", count: 1 }
+    ]
+  },
+  "石斧": {
+    materials: [
+      { name: "木棍", count: 2 },
+      { name: "石头", count: 1 }
+    ]
+  }
+};
+
+:: CraftWidgets [widget]
+<<widget "showBag">><<nobr>>
+  <<for _i, _item range $bag>>
+    <<if _item.count > 0>>
+      _item.name ×_item.count <br>
+    <</if>>
+  <</for>>
+<</nobr>><</widget>>
+
+<<widget "consume">><<nobr>>
+  <<set _recipe = setup.recipes[_args[0]]>>
+  <<for _mi, _mat range _recipe.materials>>
+    <<for _bi = 0; _bi < $bag.length; _bi++>>
+      <<if $bag[_bi].name == _mat.name>>
+        <<set $bag[_bi].count -= _mat.count>><<break>>
+      <</if>>
+    <</for>>
+  <</for>>
+<</nobr>><</widget>>
+
+<<widget "gain">><<nobr>>
+  <<set _name = _args[0]>>
+  <<set _added = false>>
+  <<for _bi = 0; _bi < $bag.length; _bi++>>
+    <<if $bag[_bi].name == _name>>
+      <<set $bag[_bi].count += 1>><<set _added = true>><<break>>
+    <</if>>
+  <</for>>
+  <<if !_added>>
+    <<run $bag.push({ name: _name, count: 1 })>>
+  <</if>>
+<</nobr>><</widget>>
+
+:: StoryInit
+<<set $bag = [
+  { name: "木棍", count: 5 },
+  { name: "布", count: 3 },
+  { name: "石头", count: 2 }
+]>>
+
+:: Start [nobr]
+''背包：''<br>
+<<showBag>>
+
+''合成：''<br>
+<<for _ri, _recipe range setup.recipes>>
+  <<capture _ri, _recipe>>
+  <<set _canCraft = true>>
+  <<for _mi, _mat range _recipe.materials>>
+    <<set _hasEnough = false>>
+    <<for _bi, _item range $bag>>
+      <<if _item.name == _mat.name && _item.count >= _mat.count>>
+        <<set _hasEnough = true>><<break>>
+      <</if>>
+    <</for>>
+    <<if !_hasEnough>><<set _canCraft = false>><</if>>
+  <</for>>
+  <<if _canCraft>>
+    <<button _ri>>
+      <<consume _ri>>
+      <<gain _ri>>
+      <<goto "Start">>
+    <</button>>
+    （<<for _mi, _mat range _recipe.materials>><<if _mi > 0>>、<</if>>_mat.name ×_mat.count<</for>>）
+  <<else>>
+    @@color:gray;_ri@@
+    （<<for _mi, _mat range _recipe.materials>><<if _mi > 0>>、<</if>>_mat.name ×_mat.count<</for>>）@@color:red;— 材料不足@@
+  <</if>>
+  <</capture>>
+<</for>>
+`} />
+
+点击"火把"或"石斧"按钮试试——合成后背包会自动更新。
+
+对比没有 widget 的写法，Start 片段的按钮内部从十几行缩减为两行：
+
+```twee
+<<button _ri>>
+  <<consume _ri>>
+  <<gain _ri>>
+  <<goto "Start">>
+<</button>>
+```
+
+代码结构回顾：
+
+1. `<<showBag>>` — 显示背包，替代手写循环
+2. `<<capture _ri, _recipe>>` — 锁住当前配方，防止按钮点击时变量已变
+3. 嵌套循环检查材料 → `_canCraft` 决定显示按钮还是灰字
+4. `<<consume _ri>><<gain _ri>>` — 执行合成，替代手写的扣材料 + 加结果逻辑
+
+## 练习
+
+在完整示例的基础上，添加第三个配方"篝火"（需要火把 ×1 + 木棍 ×3）。玩家需要先合成火把，再用火把合成篝火。
+
+<TweePlayground code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+合成练习
+
+:: CraftingData [script]
+setup.recipes = {
+  "火把": {
+    materials: [
+      { name: "木棍", count: 1 },
+      { name: "布", count: 1 }
+    ]
+  },
+  "石斧": {
+    materials: [
+      { name: "木棍", count: 2 },
+      { name: "石头", count: 1 }
+    ]
+  }
+  /* 在这里添加"篝火"配方 */
+};
+
+:: CraftWidgets [widget]
+<<widget "showBag">><<nobr>>
+  <<for _i, _item range $bag>>
+    <<if _item.count > 0>>
+      _item.name ×_item.count <br>
+    <</if>>
+  <</for>>
+<</nobr>><</widget>>
+
+<<widget "consume">><<nobr>>
+  <<set _recipe = setup.recipes[_args[0]]>>
+  <<for _mi, _mat range _recipe.materials>>
+    <<for _bi = 0; _bi < $bag.length; _bi++>>
+      <<if $bag[_bi].name == _mat.name>>
+        <<set $bag[_bi].count -= _mat.count>><<break>>
+      <</if>>
+    <</for>>
+  <</for>>
+<</nobr>><</widget>>
+
+<<widget "gain">><<nobr>>
+  <<set _name = _args[0]>>
+  <<set _added = false>>
+  <<for _bi = 0; _bi < $bag.length; _bi++>>
+    <<if $bag[_bi].name == _name>>
+      <<set $bag[_bi].count += 1>><<set _added = true>><<break>>
+    <</if>>
+  <</for>>
+  <<if !_added>>
+    <<run $bag.push({ name: _name, count: 1 })>>
+  <</if>>
+<</nobr>><</widget>>
+
+:: StoryInit
+<<set $bag = [
+  { name: "木棍", count: 8 },
+  { name: "布", count: 3 },
+  { name: "石头", count: 2 }
+]>>
+
+:: Start
+/* 用 <<showBag>>、<<consume>>、<<gain>> 和完整示例的逻辑，显示背包和合成列表 */
+`} />

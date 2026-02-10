@@ -1,0 +1,205 @@
+# 点击与刷新
+
+import { TweePlayground } from '@/components';
+
+前面的章节所有交互都靠 `[[链接]]` 来跳转片段。本章介绍几个常用宏，让你在**不跳转**的情况下也能响应玩家操作、更新页面内容。
+
+## `<<link>>` 与 `<<button>>`
+
+`<<link>>` 创建一个可点击的链接，点击时执行内部代码：
+
+```twee
+<<link "链接文字">>
+  /* 点击后执行的代码 */
+<</link>>
+```
+
+`<<button>>` 用法完全一样，只是外观是按钮而非链接：
+
+```twee
+<<button "按钮文字">>
+  /* 点击后执行的代码 */
+<</button>>
+```
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+link与button
+
+:: StoryInit
+<<set $count = 0>>
+
+:: Start
+点击次数：$count
+
+<<link "点击+1">>
+  <<set $count += 1>>
+  <<goto "Start">>
+<</link>>
+
+<<button "点击+5">>
+  <<set $count += 5>>
+  <<goto "Start">>
+<</button>>
+`} />
+
+点击后修改变量，再用 `<<goto "Start">>` 刷新页面显示新值。`<<goto>>` 会在后面介绍。
+
+## `<<linkreplace>>`
+
+点击后，链接自身被替换为内部内容：
+
+```twee
+<<linkreplace "点击查看">>
+  这是隐藏的内容。
+<</linkreplace>>
+```
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+linkreplace
+
+:: Start
+你走进了一间昏暗的房间。
+
+<<linkreplace "环顾四周">>
+  墙上挂着一幅画，桌上放着一把钥匙。
+  <<linkreplace "拿起钥匙">>
+    你拿起了钥匙。
+  <</linkreplace>>
+<</linkreplace>>
+`} />
+
+每次点击，链接消失，替换为新内容。可以嵌套使用，实现逐步展开的效果。
+
+## `<<goto>>`
+
+跳转到指定片段，效果和点击 `[[链接]]` 一样，但可以在代码中触发：
+
+```twee
+<<goto "片段名">>
+```
+
+常见用法：在 `<<link>>` 或 `<<button>>` 内部，执行完操作后跳转刷新页面。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+goto示例
+
+:: StoryInit
+<<set $hp = 100>>
+
+:: Start
+HP：$hp
+
+<<button "受到攻击（-20 HP）">>
+  <<set $hp -= 20>>
+  <<if $hp <= 0>>
+    <<goto "GameOver">>
+  <<else>>
+    <<goto "Start">>
+  <</if>>
+<</button>>
+
+:: GameOver
+''你倒下了！''
+HP：$hp
+<<button "重新开始">>
+  <<set $hp = 100>>
+  <<goto "Start">>
+<</button>>
+`} />
+
+`<<goto>>` 可以根据条件跳转到不同片段——HP 归零时跳到 GameOver，否则刷新当前页面。
+
+## `<<do>>` 与 `<<redo>>`
+
+`<<goto>>` 会重新渲染整个片段。如果只想**刷新页面的一部分**，用 `<<do>>` 和 `<<redo>>`：
+
+- `<<do>>` 标记一段可刷新的区域
+- `<<redo>>` 重新渲染所有 `<<do>>` 区域
+
+`<<redo>>` 默认刷新页面上所有 `<<do>>` 区域。如果只想刷新特定区域，给 `<<do>>` 加上 `tag`，然后 `<<redo>>` 指定同样的 tag：
+
+```twee
+<<do tag "hp">>
+  HP：$hp
+<</do>>
+
+<<do tag "mp">>
+  MP：$mp
+<</do>>
+
+<<button "扣血">>
+  <<set $hp -= 10>>
+  <<redo "hp">>  /* 只刷新 HP 区域 */
+<</button>>
+```
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+do与redo
+
+:: StoryInit
+<<set $hp = 100>>
+<<set $mp = 50>>
+<<set $hpRedoCount = 0>>
+<<set $mpRedoCount = 0>>
+
+:: Start
+<<do tag "hp">>
+HP：$hp（刷新 $hpRedoCount 次）
+<</do>>
+<<do tag "mp">>
+MP：$mp（刷新 $mpRedoCount 次）
+<</do>>
+
+<<button "受到攻击（-20 HP）">>
+  <<set $hp -= 20>>
+  <<set $hpRedoCount += 1>>
+  <<redo "hp">>
+<</button>>
+<<button "施法（-15 MP）">>
+  <<set $mp -= 15>>
+  <<set $mpRedoCount += 1>>
+  <<redo "mp">>
+<</button>>
+`} />
+
+点击按钮后，只有 `<<do>>` 包裹的 HP 显示区域会刷新，按钮本身不会消失或闪烁。比 `<<goto>>` 更流畅。
+
+### `<<goto>>` 与 `<<redo>>` 的区别
+
+| | `<<goto "Start">>` | `<<redo>>` |
+|------|------|------|
+| 行为 | 导航到指定片段 | 只刷新 `<<do>>` 区域 |
+| 页面效果 | 整页重新加载，有跳转感 | 无跳转感，其余内容不变 |
+| 适用场景 | 需要切换片段，或整页都要更新 | 只需局部更新数值或状态 |
+
+:::warning
+只有导航到新片段时，存档变量（`$` 变量）才会被保存到历史记录中。`<<redo>>` 不会触发导航，因此变量的变化不会被记录——如果玩家此时存档再读档，变量会恢复到上次导航时的值。
+:::

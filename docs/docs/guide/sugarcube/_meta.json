@@ -9,6 +9,9 @@
   { "type": "file", "name": "arrays", "label": "数组" },
   { "type": "file", "name": "objects", "label": "对象" },
   { "type": "file", "name": "story-init", "label": "特殊片段：StoryInit" },
+  { "type": "file", "name": "click-refresh", "label": "点击与刷新" },
   { "type": "file", "name": "object-arrays", "label": "对象数组" },
-  { "type": "file", "name": "loops", "label": "循环" }
+  { "type": "file", "name": "loops", "label": "循环" },
+  { "type": "file", "name": "widgets", "label": "Widget" },
+  { "type": "file", "name": "crafting", "label": "合成系统" }
 ]
