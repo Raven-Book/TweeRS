@@ -40,7 +40,7 @@ MP：$mp / $maxMp
 
 `<<status>>` 会被替换为 widget 内部的内容。
 
-<TweePlayground code={`:: StoryData
+<TweePlayground hideStoryHeader code={`:: StoryData
 {
   "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
   "format": "SugarCube",
@@ -249,7 +249,7 @@ Widget 必须定义在带有 `[widget]` 标签的片段里。
 
 创建 `<<item>>` 容器 widget，用来显示物品信息卡片。参数是物品名称，内容是物品描述。再创建一个 `<<bag>>` widget（无参数），用循环遍历 `$bag` 数组，为每个物品调用 `<<item>>`。
 
-<TweePlayground code={`:: StoryData
+<TweePlayground hideStoryHeader code={`:: StoryData
 {
   "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
   "format": "SugarCube",
