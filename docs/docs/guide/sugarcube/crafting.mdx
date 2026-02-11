@@ -74,14 +74,14 @@ setup.recipes = {
 显示背包内容会在多个地方用到，先封装成 widget：
 
 ```twee
-:: CraftWidgets [widget]
-<<widget "showBag">><<nobr>>
+:: CraftWidgets [widget nobr]
+<<widget "showBag">>
   <<for _i, _item range $bag>>
     <<if _item.count > 0>>
       _item.name ×_item.count <br>
     <</if>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 ```
 
 <TweePlayground hideStoryHeader code={`:: StoryData
@@ -94,14 +94,14 @@ setup.recipes = {
 :: StoryTitle
 显示背包
 
-:: CraftWidgets [widget]
-<<widget "showBag">><<nobr>>
+:: CraftWidgets [widget nobr]
+<<widget "showBag">>
   <<for _i, _item range $bag>>
     <<if _item.count > 0>>
       _item.name ×_item.count <br>
     <</if>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 
 :: StoryInit
 <<set $bag = [
@@ -194,7 +194,7 @@ setup.recipes = {
 `<<consume>>` 扣除材料——内层循环用三段式 `<<for>>` 而不是 `range`，因为需通过 `$bag[_bi].count` 直接修改背包物品数量：
 
 ```twee
-<<widget "consume">><<nobr>>
+<<widget "consume">>
   <<set _recipe = setup.recipes[_args[0]]>>
   <<for _mi, _mat range _recipe.materials>>
     <<for _bi = 0; _bi < $bag.length; _bi++>>
@@ -204,13 +204,13 @@ setup.recipes = {
       <</if>>
     <</for>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 ```
 
 `<<gain>>` 添加合成结果——找到同名物品就 `count += 1`，没找到就用 `.push()` 新增：
 
 ```twee
-<<widget "gain">><<nobr>>
+<<widget "gain">>
   <<set _name = _args[0]>>
   <<set _added = false>>
   <<for _bi = 0; _bi < $bag.length; _bi++>>
@@ -223,7 +223,7 @@ setup.recipes = {
   <<if !_added>>
     <<run $bag.push({ name: _name, count: 1 })>>
   <</if>>
-<</nobr>><</widget>>
+<</widget>>
 ```
 
 调用时写 `<<consume "火把">><<gain "火把">>` 就能执行火把配方的合成。
@@ -258,16 +258,16 @@ setup.recipes = {
   }
 };
 
-:: CraftWidgets [widget]
-<<widget "showBag">><<nobr>>
+:: CraftWidgets [widget nobr]
+<<widget "showBag">>
   <<for _i, _item range $bag>>
     <<if _item.count > 0>>
       _item.name ×_item.count <br>
     <</if>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 
-<<widget "consume">><<nobr>>
+<<widget "consume">>
   <<set _recipe = setup.recipes[_args[0]]>>
   <<for _mi, _mat range _recipe.materials>>
     <<for _bi = 0; _bi < $bag.length; _bi++>>
@@ -276,9 +276,9 @@ setup.recipes = {
       <</if>>
     <</for>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 
-<<widget "gain">><<nobr>>
+<<widget "gain">>
   <<set _name = _args[0]>>
   <<set _added = false>>
   <<for _bi = 0; _bi < $bag.length; _bi++>>
@@ -289,7 +289,7 @@ setup.recipes = {
   <<if !_added>>
     <<run $bag.push({ name: _name, count: 1 })>>
   <</if>>
-<</nobr>><</widget>>
+<</widget>>
 
 :: StoryInit
 <<set $bag = [
@@ -380,16 +380,16 @@ setup.recipes = {
   /* 在这里添加"篝火"配方 */
 };
 
-:: CraftWidgets [widget]
-<<widget "showBag">><<nobr>>
+:: CraftWidgets [widget nobr]
+<<widget "showBag">>
   <<for _i, _item range $bag>>
     <<if _item.count > 0>>
       _item.name ×_item.count <br>
     <</if>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 
-<<widget "consume">><<nobr>>
+<<widget "consume">>
   <<set _recipe = setup.recipes[_args[0]]>>
   <<for _mi, _mat range _recipe.materials>>
     <<for _bi = 0; _bi < $bag.length; _bi++>>
@@ -398,9 +398,9 @@ setup.recipes = {
       <</if>>
     <</for>>
   <</for>>
-<</nobr>><</widget>>
+<</widget>>
 
-<<widget "gain">><<nobr>>
+<<widget "gain">>
   <<set _name = _args[0]>>
   <<set _added = false>>
   <<for _bi = 0; _bi < $bag.length; _bi++>>
@@ -411,7 +411,7 @@ setup.recipes = {
   <<if !_added>>
     <<run $bag.push({ name: _name, count: 1 })>>
   <</if>>
-<</nobr>><</widget>>
+<</widget>>
 
 :: StoryInit
 <<set $bag = [
