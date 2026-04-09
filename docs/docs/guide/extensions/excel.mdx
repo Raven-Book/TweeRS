@@ -1,1 +1,321 @@
 # 扩展功能: 数据表
+
+import { TweePlayground } from '@/components';
+import { ExcelVisualizer } from '@/teaching';
+
+在[合成系统](/guide/sugarcube/crafting)里，我们写了两个配方：
+
+```twee
+:: CraftingData [script]
+setup.recipes = {
+  "火把": {
+    materials: [
+      { name: "木棍", count: 1 },
+      { name: "布", count: 1 }
+    ]
+  },
+  "石斧": {
+    materials: [
+      { name: "木棍", count: 2 },
+      { name: "石头", count: 1 }
+    ]
+  }
+};
+```
+
+但如果游戏有 50 种物品、30 个敌人、20 条对话呢？几百行数据容易出错，又难以修改。
+
+使用数据表可以这些内容放到 Excel 里编辑，TweeRS 构建时自动转换。
+
+## 基本用法
+
+把 `.xlsx` 文件放在 `src/` 目录下，和 `.twee` 文件放在一起：
+
+```
+src/
+├── story.twee
+├── items.xlsx      ← 物品数据
+└── config.xlsx     ← 配置数据
+```
+
+运行构建命令即可(VSCode插件不需要运行命令)：
+
+```bash
+tweers build src/ -o game.html
+```
+
+TweeRS 会自动识别 `.xlsx` 文件并处理 Excel 文件中的所有 Sheet。
+
+## 对象表
+
+最常用的表类型。适合存放**结构相同的数据**，如物品、敌人、配方。
+
+对象表需要三行，分别用 `#save`、`#obj`、`#type` 标记：
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "window.items"],
+    ["#obj", "id", "name", "price"],
+    ["#type", "int", "string", "int"]
+  ]}
+  data={[
+    ["", "1", "铁剑", "100"],
+    ["", "2", "药水", "50"],
+    ["", "3", "盾牌", "200"]
+  ]}
+  output={`window.items = [
+    {
+        id: 1,
+        name: "铁剑",
+        price: 100
+    },
+    {
+        id: 2,
+        name: "药水",
+        price: 50
+    },
+    {
+        id: 3,
+        name: "盾牌",
+        price: 200
+    }
+];`}
+/>
+
+三行表头各有分工：
+
+| 表头行 | 作用 | 示例 |
+|------|------|------|
+| `#save` | B 列填写保存的变量名 | `window.items` |
+| `#obj` | 从 B 列起定义每列的字段名 | `id`、`name`、`price` |
+| `#type` | 从 B 列起定义每列的数据类型 | `int`、`string`、`int` |
+
+数据从第 4 行开始，**A 列留空**——A 列只用于写 `#` 标记。
+
+### 数据类型
+
+`#type` 行支持以下类型：
+
+| 类型 | 别名 | 说明 | 示例值 → 输出 |
+|------|------|------|------|
+| `int` | `integer` | 整数 | `42` → `42` |
+| `float` | `double` | 小数 | `3.14` → `3.14` |
+| `number` | — | 数字 | `100` → `100` |
+| `string` | `str` | 文本 | `铁剑` → `"铁剑"` |
+| `bool` | `boolean` | 布尔值 | `true` / `yes` / `1` → `true` |
+| `object` | `obj` | 对象 | `{a:1}` → `{a:1}` |
+| `array<T>` | — | 数组，元素按 T 类型处理 | 见[数组字段](#进阶数组字段) |
+
+:::tip
+空单元格或填写 `null` 的单元格，不管什么类型都会输出 `null`。
+:::
+
+### 在游戏中使用
+
+数据表生成的代码会自动注入到游戏中。使用方式和[合成系统](/guide/sugarcube/crafting)里的 `setup.recipes` 一样——在宏里直接访问变量名即可。
+
+<TweePlayground hideStoryHeader code={`:: StoryData
+{
+  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+  "format": "SugarCube",
+  "format-version": "2.37.3"
+}
+
+:: StoryTitle
+数据表示例
+
+:: ItemData [script]
+/* 这段代码由 Excel 自动生成，不需要手写 */
+window.items = [
+  { id: 1, name: "铁剑", price: 100 },
+  { id: 2, name: "药水", price: 50 },
+  { id: 3, name: "盾牌", price: 200 }
+];
+
+:: Start [nobr]
+''商店物品：''<br>
+<<for _i, _item range window.items>>
+  _item.name —— _item.price 金币<br>
+<</for>>
+`} />
+
+`ItemData` 片段里的代码就是 Excel 自动生成的内容。实际使用时你不需要手写这个片段——TweeRS 构建时会自动注入。
+
+## 参数表
+
+参数表用来存放**配置**，比如游戏的全局设置。
+
+只需要两行表头：`#save` 和 `#var`。`#var` 行必须包含 `name`、`type`、`value` 三列，可选 `comment` 列用于备注。
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "window.config"],
+    ["#var", "name", "type", "value", "comment"]
+  ]}
+  data={[
+    ["", "maxHp", "int", "100", "最大血量"],
+    ["", "playerName", "string", "主角", "默认名字"],
+    ["", "debugMode", "bool", "false", "调试模式"]
+  ]}
+  output={`window.config = {
+    maxHp: 100,
+    playerName: "主角",
+    debugMode: false
+};`}
+/>
+
+和对象表的区别：对象表生成的是**数组**（多条数据），参数表生成的是**对象**（一组配置）。
+
+## HTML 表
+
+HTML 表用来存放**大段文本内容**，比如对话、剧情描述、事件说明。
+
+两行表头：`#save` 和 `#html`。
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "dialogs"],
+    ["#html", "id", "name", "content", "effect"]
+  ]}
+  data={[
+    ["", "1", "老村长", "欢迎来到新手村！", "获得木剑"],
+    ["", "2", "商人", "要买点什么吗？", "打开商店"]
+  ]}
+  output={`<tweers-exceldata hidden>
+  <dialogs>
+    <div id="dialogs-1" data-name="老村长">
+      <content>欢迎来到新手村！</content>
+      <effect>获得木剑</effect>
+    </div>
+    <div id="dialogs-2" data-name="商人">
+      <content>要买点什么吗？</content>
+      <effect>打开商店</effect>
+    </div>
+  </dialogs>
+</tweers-exceldata>`}
+  outputType="html"
+/>
+
+HTML 表的特殊规则：
+
+| 列 | 处理方式 |
+|------|------|
+| `id` | 忽略你填的值，自动生成为 `{保存名}-{行号}`（如 `dialogs-1`） |
+| `name` | 变为 `data-name` 属性 |
+| 其他列 | 变为子标签，列名即标签名 |
+
+生成的 HTML 注入到一个隐藏的 `<tweers-exceldata>` 标签中。
+
+## 进阶：保存变量的写法
+
+对象表的 `#save` 行支持三种写法，适用于不同场景。
+
+### 直接变量名（默认）
+
+直接填写变量名，生成赋值语句：
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "window.items"],
+    ["#obj", "id", "name"],
+    ["#type", "int", "string"]
+  ]}
+  data={[
+    ["", "1", "铁剑"],
+    ["", "2", "药水"]
+  ]}
+  output={`window.items = [
+    {
+        id: 1,
+        name: "铁剑"
+    },
+    {
+        id: 2,
+        name: "药水"
+    }
+];`}
+/>
+
+### all# 模板
+
+用 `all#` 前缀，把整个数组作为参数传给方法。`$content` 会被替换为数据：
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "all#Item.addAll($content)"],
+    ["#obj", "id", "name"],
+    ["#type", "int", "string"]
+  ]}
+  data={[
+    ["", "1", "铁剑"],
+    ["", "2", "药水"]
+  ]}
+  output={`Item.addAll([
+    {
+        id: 1,
+        name: "铁剑"
+    },
+    {
+        id: 2,
+        name: "药水"
+    }
+]);`}
+/>
+
+### single# 模板
+
+用 `single#` 前缀，为**每一行**数据生成一次。用 `$字段名` 引用列值：
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "single#Item.add($name, $price)"],
+    ["#obj", "name", "price"],
+    ["#type", "string", "int"]
+  ]}
+  data={[
+    ["", "铁剑", "100"],
+    ["", "药水", "50"]
+  ]}
+  output={`Item.add("铁剑", 100);
+Item.add("药水", 50);`}
+/>
+
+## 进阶：数组
+
+用 `字段名#N` 的写法把多列合并为数组：
+
+<ExcelVisualizer
+  headers={[
+    ["#save", "window.items"],
+    ["#obj", "name", "tags#1", "tags#2", "tags#3"],
+    ["#type", "string", "string", "string", "string"]
+  ]}
+  data={[
+    ["", "铁剑", "武器", "近战", ""],
+    ["", "药水", "消耗品", "", ""]
+  ]}
+  output={`window.items = [
+    {
+        name: "铁剑",
+        tags: ["武器", "近战"]
+    },
+    {
+        name: "药水",
+        tags: ["消耗品"]
+    }
+];`}
+/>
+
+`tags#1`、`tags#2`、`tags#3` 三列的值合并为一个 `tags` 数组。空单元格会被跳过。
+
+:::warning
+下标从 **1** 开始不能写 `tags#0`
+:::
+
+## 总结
+
+| 表类型 | 表头 | 输出格式 | 适用场景 |
+|------|------|------|------|
+| 对象表 | `#save` `#obj` `#type` | 对象数组 | 物品、敌人、配方等批量数据 |
+| 参数表 | `#save` `#var` | 单个对象 | 全局配置、游戏参数 |
+| HTML 表 | `#save` `#html` | HTML 标签 | 对话、剧情文本、富内容 |

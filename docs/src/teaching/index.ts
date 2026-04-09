@@ -1,4 +1,5 @@
 export { ArrayVisualizer } from './ArrayVisualizer';
+export { ExcelVisualizer } from './ExcelVisualizer';
 export { AssignmentVisualizer } from './AssignmentVisualizer';
 export { ConditionVisualizer } from './ConditionVisualizer';
 export { LoopVisualizer } from './LoopVisualizer';
