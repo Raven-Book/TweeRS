@@ -221,12 +221,10 @@ async fn build_once(
                     if let Some(ext_str) = ext.to_str() {
                         if matches!(ext_str, "twee" | "tw") {
                             let content = tokio::fs::read_to_string(file_path).await?;
-                            if let Ok(parsed) =
-                                tweers_core::core::file::parse_text_content(
-                                    &file_path.to_string_lossy(),
-                                    &content,
-                                )
-                            {
+                            if let Ok(parsed) = tweers_core::core::file::parse_text_content(
+                                &file_path.to_string_lossy(),
+                                &content,
+                            ) {
                                 context.update_cache(
                                     file_path.clone(),
                                     parsed.passages,

@@ -237,8 +237,8 @@ impl HtmlOutputHandler {
             if stylesheets.len() == 1 {
                 data.extend_from_slice(stylesheets[0].content.as_bytes());
             } else {
-                let mut pid = 1;
-                for passage in &stylesheets {
+                for (index, passage) in stylesheets.iter().enumerate() {
+                    let pid = index + 1;
                     if pid > 1 && !data.is_empty() && data[data.len() - 1] != b'\n' {
                         data.push(b'\n');
                     }
@@ -247,7 +247,6 @@ impl HtmlOutputHandler {
                             .as_bytes(),
                     );
                     data.extend_from_slice(passage.content.as_bytes());
-                    pid += 1;
                 }
             }
             data.extend_from_slice(b"</style>");
@@ -260,8 +259,8 @@ impl HtmlOutputHandler {
             if scripts.len() == 1 {
                 data.extend_from_slice(scripts[0].content.as_bytes());
             } else {
-                let mut pid = 1;
-                for passage in &scripts {
+                for (index, passage) in scripts.iter().enumerate() {
+                    let pid = index + 1;
                     if pid > 1 && !data.is_empty() && data[data.len() - 1] != b'\n' {
                         data.push(b'\n');
                     }
@@ -270,7 +269,6 @@ impl HtmlOutputHandler {
                             .as_bytes(),
                     );
                     data.extend_from_slice(passage.content.as_bytes());
-                    pid += 1;
                 }
             }
             data.extend_from_slice(b"</script>");
