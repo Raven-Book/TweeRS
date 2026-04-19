@@ -1,9 +1,12 @@
 // Stable API facade for external consumers - Pure logic, no I/O
 
-use crate::core::file::{aggregate_sources, parse_bytes_content, parse_text_content};
+use crate::core::file::{
+    aggregate_sources, inject_tweers_paths, parse_bytes_content, parse_text_content,
+};
 use crate::core::html::TwineHtmlParser;
 use crate::core::story::{Passage, StoryData, StoryFormat};
 use indexmap::IndexMap;
+use std::path::PathBuf;
 
 pub type Error = Box<dyn std::error::Error>;
 
@@ -171,6 +174,7 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
 
     // Parse all sources
     let (passages, mut story_data) = parse_sources(&config.sources)?;
+    let source_paths = collect_source_paths(&config.sources);
 
     // Sort passages by source_file using depth-first natural order
     let mut passages_vec: Vec<(String, Passage)> = passages.into_iter().collect();
@@ -186,6 +190,9 @@ pub fn build(config: BuildConfig) -> Result<BuildOutput, Box<dyn std::error::Err
     if config.start_passage.is_some() {
         story_data.start = config.start_passage;
     }
+
+    let mut passages = passages;
+    inject_tweers_paths(&mut passages, &[], &source_paths);
 
     // Generate HTML
     let html = HtmlOutputHandler::generate_html(
@@ -255,10 +262,13 @@ pub fn build_from_parsed(
 
     // Parse story format
     let story_format = StoryFormat::parse(&parsed.format_info.source)?;
+    let mut passages = parsed.passages;
+
+    inject_tweers_paths(&mut passages, &[], &[]);
 
     // Generate HTML
     let html = HtmlOutputHandler::generate_html(
-        &parsed.passages,
+        &passages,
         &Some(parsed.story_data.clone()),
         &story_format,
         parsed.is_debug,
@@ -282,9 +292,7 @@ pub fn sort_paths(paths: Vec<String>) -> Vec<String> {
 }
 
 /// Parse Twine export HTML into passages and story data
-pub fn parse_html(
-    html: &str,
-) -> Result<HtmlParseOutput, Box<dyn std::error::Error + Send + Sync>> {
+pub fn parse_html(html: &str) -> Result<HtmlParseOutput, Box<dyn std::error::Error + Send + Sync>> {
     let parsed = TwineHtmlParser::parse(html)?;
     Ok(HtmlParseOutput {
         passages: parsed.passages,
@@ -294,9 +302,20 @@ pub fn parse_html(
 }
 
 /// Convert Twine export HTML directly into Twee text
-pub fn html_to_twee(
-    html: &str,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+pub fn html_to_twee(html: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let parsed = parse_html(html)?;
-    Ok(TwineHtmlParser::to_twee(&parsed.passages, &parsed.story_data))
+    Ok(TwineHtmlParser::to_twee(
+        &parsed.passages,
+        &parsed.story_data,
+    ))
+}
+
+fn collect_source_paths(sources: &[InputSource]) -> Vec<PathBuf> {
+    sources
+        .iter()
+        .map(|source| match source {
+            InputSource::Text { name, .. } => PathBuf::from(name),
+            InputSource::Bytes { name, .. } => PathBuf::from(name),
+        })
+        .collect()
 }

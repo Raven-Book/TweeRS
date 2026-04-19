@@ -22,5 +22,9 @@ async fn test_twee_parser() {
     // Should have Start and Next passages
     assert!(passages.contains_key("Start"));
     assert!(passages.contains_key("Next"));
+    assert_eq!(
+        passages["Start"].source_file.as_deref(),
+        Some(test_file.to_string_lossy().as_ref())
+    );
     assert!(story_data.is_some());
 }

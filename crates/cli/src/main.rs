@@ -183,14 +183,22 @@ fn default_html2twee_file_name(
         .file_stem()
         .and_then(|name| name.to_str())
         .filter(|name| !name.is_empty())
-        .ok_or_else(|| format!("Failed to derive output file name from {}", input_path.display()))?;
+        .ok_or_else(|| {
+            format!(
+                "Failed to derive output file name from {}",
+                input_path.display()
+            )
+        })?;
 
     Ok(format!("{stem}.twee"))
 }
 
 fn confirm_overwrite(path: &Path) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
     loop {
-        print!("Output already exists: {}. Overwrite? [Y/N]: ", path.display());
+        print!(
+            "Output already exists: {}. Overwrite? [Y/N]: ",
+            path.display()
+        );
         io::stdout().flush()?;
 
         let mut response = String::new();

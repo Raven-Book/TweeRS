@@ -60,6 +60,11 @@ tweers html2twee dist/index.html -o dist/story.twee
 - `-o` 传目录时，会在该目录下使用输入 HTML 的文件名并将后缀替换为 `.twee`。
 - 命令会打印最终输出路径；若目标文件已存在，会提示 `Overwrite? [Y/N]` 确认是否覆盖。
 
+### TweersPaths
+- `build` 时会自动注入系统片段 `TweersPaths`。
+- 其内容为 JSON，`sources` 数组记录 `twee/js/css` 来源信息。
+- `path` 和 `dir` 按各自 source root 计算相对路径，根目录文件的 `dir` 为 `.`。
+
 ### update
 - `tweers update [-f]`：更新到最新发布版（`-f` 强制更新）。
 

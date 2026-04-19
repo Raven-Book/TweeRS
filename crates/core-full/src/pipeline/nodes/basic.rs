@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use std::path::PathBuf;
 use tracing::{debug, info, warn};
 use tweers_core::core::file::{
-    detect_file_type, parse_bytes_content, parse_text_content, FileType,
+    detect_file_type, inject_tweers_paths, parse_bytes_content, parse_text_content, FileType,
 };
 use tweers_core::core::output::HtmlOutputHandler;
 use tweers_core::core::story::{Passage, StoryData};
@@ -256,6 +256,7 @@ impl PipeNode for DataAggregatorNode {
     fn input(&self) -> Vec<String> {
         vec![
             "files".to_string(),
+            "sources".to_string(),
             "context".to_string(),
             "parsed_data?".to_string(),
         ]
@@ -273,6 +274,9 @@ impl PipeNode for DataAggregatorNode {
         let files = data
             .get_typed(tweers_core::pipeline::FILES)
             .ok_or_else(|| TweersError::missing_input("files"))?;
+        let source_roots = data
+            .get_typed(tweers_core::pipeline::SOURCES)
+            .ok_or_else(|| TweersError::missing_input("sources"))?;
 
         let context = data
             .get_typed(CONTEXT)
@@ -325,6 +329,8 @@ impl PipeNode for DataAggregatorNode {
         if all_passages.is_empty() {
             return Err(TweersError::other("No passages found in any files"));
         }
+
+        inject_tweers_paths(&mut all_passages, source_roots, files);
 
         debug!("Total passages aggregated: {}", all_passages.len());
 

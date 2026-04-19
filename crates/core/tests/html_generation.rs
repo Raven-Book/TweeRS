@@ -226,6 +226,10 @@ Another passage
     assert_eq!(output.format_info.name, "SugarCube");
     assert_eq!(output.format_info.version, "2.37.3");
     assert!(output.format_info.source.is_empty());
+    assert_eq!(
+        output.passages["Start"].source_file.as_deref(),
+        Some("test.twee")
+    );
 }
 
 #[test]
@@ -279,6 +283,87 @@ Hello from parsed build
     assert!(!output.html.is_empty());
     assert!(output.html.contains("Build From Parsed Test"));
     assert!(output.html.contains("Hello from parsed build"));
+    assert!(output.html.contains("TweersPaths"));
+}
+
+#[test]
+fn test_build_injects_tweers_paths_with_source_metadata() {
+    use tweers_core::api::{BuildConfig, InputSource, StoryFormatInfo, build, parse_html};
+
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let test_dir = manifest_dir.parent().unwrap().parent().unwrap();
+    let format_file = test_dir.join("test/story-format/sugarcube-2.37.3/format.js");
+    let format_source = fs::read_to_string(&format_file).expect("Failed to read format file");
+
+    let sources = vec![
+        InputSource::Text {
+            name: "story/main.twee".to_string(),
+            content: r#":: StoryData
+{
+    "ifid": "12345678-1234-1234-1234-123456789012",
+    "format": "SugarCube",
+    "format-version": "2.37.3"
+}
+
+:: StoryTitle
+Test
+
+:: Start
+Hello
+
+:: Scene
+World
+"#
+            .to_string(),
+        },
+        InputSource::Text {
+            name: "assets/theme.css".to_string(),
+            content: "body { color: red; }".to_string(),
+        },
+        InputSource::Text {
+            name: "assets/logic.js".to_string(),
+            content: "window.answer = 42;".to_string(),
+        },
+    ];
+
+    let format_info = StoryFormatInfo {
+        name: "SugarCube".to_string(),
+        version: "2.37.3".to_string(),
+        source: format_source,
+    };
+
+    let output = build(BuildConfig::new(format_info).sources(sources)).expect("build failed");
+    let parsed = parse_html(&output.html).expect("parse_html failed");
+    let tweers_paths = parsed
+        .passages
+        .get("TweersPaths")
+        .expect("missing TweersPaths passage");
+
+    let json: serde_json::Value =
+        serde_json::from_str(&tweers_paths.content).expect("TweersPaths should be valid JSON");
+    let sources = json["sources"]
+        .as_array()
+        .expect("sources should be an array");
+
+    assert!(sources.iter().any(|item| {
+        item["type"] == "twee"
+            && item["path"] == "story/main.twee"
+            && item["dir"] == "story"
+            && item["name"] == "main.twee"
+            && item["passages"] == serde_json::json!(["StoryData", "StoryTitle", "Start", "Scene"])
+    }));
+    assert!(sources.iter().any(|item| {
+        item["type"] == "css"
+            && item["path"] == "assets/theme.css"
+            && item["dir"] == "assets"
+            && item["name"] == "theme.css"
+    }));
+    assert!(sources.iter().any(|item| {
+        item["type"] == "js"
+            && item["path"] == "assets/logic.js"
+            && item["dir"] == "assets"
+            && item["name"] == "logic.js"
+    }));
 }
 
 #[test]
@@ -408,7 +493,10 @@ Talk to me
 
     assert_eq!(reparsed.story_data.name.as_deref(), Some("Round Trip"));
     assert_eq!(reparsed.story_data.start.as_deref(), Some("Start"));
-    assert_eq!(reparsed.story_data.ifid, "12345678-1234-1234-1234-123456789012");
+    assert_eq!(
+        reparsed.story_data.ifid,
+        "12345678-1234-1234-1234-123456789012"
+    );
     assert_eq!(reparsed.story_data.format, "SugarCube");
     assert_eq!(reparsed.story_data.format_version, "2.37.3");
     assert_eq!(

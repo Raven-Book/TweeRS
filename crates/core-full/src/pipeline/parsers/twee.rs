@@ -3,7 +3,7 @@ use super::r#trait::FileParser;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use std::path::Path;
-use tweers_core::core::parser::TweeParser;
+use tweers_core::core::file::parse_text_content;
 use tweers_core::core::story::{Passage, StoryData};
 use tweers_core::error::{Result, TweersError};
 
@@ -20,8 +20,10 @@ impl FileParser for TweeFileParser {
         file_path: &Path,
     ) -> Result<(IndexMap<String, Passage>, Option<StoryData>)> {
         let content = tokio::fs::read_to_string(file_path).await?;
-        TweeParser::parse(&content).map_err(|e| {
+        let parsed = parse_text_content(&file_path.to_string_lossy(), &content).map_err(|e| {
             TweersError::parse(format!("Failed to parse {}: {}", file_path.display(), e))
-        })
+        })?;
+
+        Ok((parsed.passages, parsed.story_data))
     }
 }

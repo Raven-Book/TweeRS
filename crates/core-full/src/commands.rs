@@ -221,16 +221,19 @@ async fn build_once(
                     if let Some(ext_str) = ext.to_str() {
                         if matches!(ext_str, "twee" | "tw") {
                             let content = tokio::fs::read_to_string(file_path).await?;
-                            if let Ok((passages, story_data)) =
-                                tweers_core::core::parser::TweeParser::parse(&content)
+                            if let Ok(parsed) =
+                                tweers_core::core::file::parse_text_content(
+                                    &file_path.to_string_lossy(),
+                                    &content,
+                                )
                             {
                                 context.update_cache(
                                     file_path.clone(),
-                                    passages,
-                                    story_data.clone(),
+                                    parsed.passages,
+                                    parsed.story_data.clone(),
                                 )?;
 
-                                if let Some(data) = story_data {
+                                if let Some(data) = parsed.story_data {
                                     // Load story format based on StoryData
                                     let format_source = crate::format::find_and_load_format(
                                         &data.format,

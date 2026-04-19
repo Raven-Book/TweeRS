@@ -23,9 +23,7 @@ struct CapturedElement {
 pub struct TwineHtmlParser;
 
 impl TwineHtmlParser {
-    pub fn parse(
-        html: &str,
-    ) -> Result<HtmlParseOutput, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn parse(html: &str) -> Result<HtmlParseOutput, Box<dyn std::error::Error + Send + Sync>> {
         let story_element =
             Self::extract_first_element(html, "tw-storydata")?.ok_or_else(|| {
                 "Failed to find <tw-storydata> in HTML. Only Twine export HTML is supported."
@@ -64,7 +62,11 @@ impl TwineHtmlParser {
             let Some(name) = attrs.get("name").filter(|value| !value.is_empty()).cloned() else {
                 continue;
             };
-            let Some(color) = attrs.get("color").filter(|value| !value.is_empty()).cloned() else {
+            let Some(color) = attrs
+                .get("color")
+                .filter(|value| !value.is_empty())
+                .cloned()
+            else {
                 continue;
             };
             tag_colors.insert(name, color);
@@ -99,7 +101,10 @@ impl TwineHtmlParser {
             });
         }
 
-        let start = match story_attrs.get("startnode").filter(|value| !value.is_empty()) {
+        let start = match story_attrs
+            .get("startnode")
+            .filter(|value| !value.is_empty())
+        {
             Some(startnode) => Some(
                 pid_to_name
                     .get(startnode)
@@ -265,7 +270,9 @@ impl TwineHtmlParser {
         html: &str,
         tag_name: &str,
     ) -> Result<Option<CapturedElement>, Box<dyn std::error::Error + Send + Sync>> {
-        Ok(Self::extract_all_elements(html, tag_name)?.into_iter().next())
+        Ok(Self::extract_all_elements(html, tag_name)?
+            .into_iter()
+            .next())
     }
 
     fn extract_all_elements(

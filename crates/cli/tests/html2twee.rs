@@ -87,7 +87,10 @@ fn test_html2twee_command_output_directory() {
     assert!(output.status.success(), "html2twee command failed");
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains(&format!("Output written to: {}", output_path.display())));
-    assert!(output_path.exists(), "expected output file to be created in directory");
+    assert!(
+        output_path.exists(),
+        "expected output file to be created in directory"
+    );
 }
 
 #[test]
