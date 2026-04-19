@@ -280,3 +280,186 @@ Hello from parsed build
     assert!(output.html.contains("Build From Parsed Test"));
     assert!(output.html.contains("Hello from parsed build"));
 }
+
+#[test]
+fn test_parse_html_to_twee_api() {
+    use tweers_core::api::{html_to_twee, parse_html};
+
+    let html = r#"<!doctype html>
+<html>
+<body>
+<tw-storydata name="Test Story" startnode="2" creator="Twine" creator-version="2.9.0" ifid="12345678-1234-1234-1234-123456789012" zoom="1" format="SugarCube" format-version="2.37.3" options="debug" hidden>
+<style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* twine-user-stylesheet #1: "StoryStylesheet" */
+body { color: red; }</style>
+<script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "StoryScript" */
+window.answer = 42;</script>
+<tw-tag name="npc" color="blue"></tw-tag>
+<tw-passagedata pid="1" name="Intro" tags="entry" position="100,200" size="200,100">Hello &lt;b&gt;world&lt;/b&gt; &amp; friends</tw-passagedata>
+<tw-passagedata pid="2" name="Start" tags="" position="" size="">Go</tw-passagedata>
+</tw-storydata>
+</body>
+</html>"#;
+
+    let parsed = parse_html(html).expect("parse_html failed");
+    assert_eq!(parsed.story_data.name.as_deref(), Some("Test Story"));
+    assert_eq!(parsed.story_data.start.as_deref(), Some("Start"));
+    assert_eq!(parsed.story_data.format, "SugarCube");
+    assert_eq!(parsed.story_data.format_version, "2.37.3");
+    assert!(parsed.is_debug);
+    assert_eq!(
+        parsed
+            .story_data
+            .tag_colors
+            .as_ref()
+            .and_then(|m| m.get("npc"))
+            .map(String::as_str),
+        Some("blue")
+    );
+    assert_eq!(
+        parsed.passages["Intro"].content,
+        "Hello <b>world</b> & friends"
+    );
+    assert_eq!(
+        parsed.passages["StoryStylesheet"].content,
+        "/* twine-user-stylesheet #1: \"StoryStylesheet\" */\nbody { color: red; }"
+    );
+    assert_eq!(
+        parsed.passages["StoryScript"].content,
+        "/* twine-user-script #1: \"StoryScript\" */\nwindow.answer = 42;"
+    );
+
+    let twee = html_to_twee(html).expect("html_to_twee failed");
+    assert!(twee.contains(":: StoryData"));
+    assert!(twee.contains("\"format-version\": \"2.37.3\""));
+    assert!(twee.contains("\"tag-colors\": {\"npc\":\"blue\"}"));
+    assert!(twee.contains(":: StoryTitle"));
+    assert!(twee.contains(":: StoryStylesheet [stylesheet]"));
+    assert!(twee.contains(":: StoryScript [script]"));
+    assert!(twee.contains("/* twine-user-stylesheet #1: \"StoryStylesheet\" */"));
+    assert!(twee.contains("/* twine-user-script #1: \"StoryScript\" */"));
+    assert!(twee.contains("Hello <b>world</b> & friends"));
+}
+
+#[test]
+fn test_html_to_twee_round_trip_keeps_core_semantics() {
+    use tweers_core::api::{BuildConfig, InputSource, StoryFormatInfo, html_to_twee, parse};
+
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let test_dir = manifest_dir.parent().unwrap().parent().unwrap();
+    let format_file = test_dir.join("test/story-format/sugarcube-2.37.3/format.js");
+    let format_source = fs::read_to_string(&format_file).expect("Failed to read format file");
+
+    let content = r#":: StoryData
+{
+    "ifid": "12345678-1234-1234-1234-123456789012",
+    "format": "SugarCube",
+    "format-version": "2.37.3",
+    "start": "Start",
+    "tag-colors": {"npc":"blue"}
+}
+
+:: StoryTitle
+Round Trip
+
+:: theme-a.css [stylesheet]
+body {
+  color: red;
+}
+
+:: theme-b.css [stylesheet]
+.panel {
+  color: blue;
+}
+
+:: logic-a.js [script]
+window.answer = 42;
+
+:: logic-b.js [script]
+window.extra = true;
+
+:: Start [entry]
+Hello & welcome
+
+:: NPC [npc]
+Talk to me
+"#;
+
+    let sources = vec![InputSource::Text {
+        name: "story.twee".to_string(),
+        content: content.to_string(),
+    }];
+
+    let format_info = StoryFormatInfo {
+        name: "SugarCube".to_string(),
+        version: "2.37.3".to_string(),
+        source: format_source,
+    };
+
+    let html = tweers_core::api::build(BuildConfig::new(format_info).sources(sources))
+        .expect("build failed")
+        .html;
+
+    let round_trip_twee = html_to_twee(&html).expect("html_to_twee failed");
+    let reparsed = parse(vec![InputSource::Text {
+        name: "roundtrip.twee".to_string(),
+        content: round_trip_twee,
+    }])
+    .expect("reparse failed");
+
+    assert_eq!(reparsed.story_data.name.as_deref(), Some("Round Trip"));
+    assert_eq!(reparsed.story_data.start.as_deref(), Some("Start"));
+    assert_eq!(reparsed.story_data.ifid, "12345678-1234-1234-1234-123456789012");
+    assert_eq!(reparsed.story_data.format, "SugarCube");
+    assert_eq!(reparsed.story_data.format_version, "2.37.3");
+    assert_eq!(
+        reparsed
+            .story_data
+            .tag_colors
+            .as_ref()
+            .and_then(|m| m.get("npc"))
+            .map(String::as_str),
+        Some("blue")
+    );
+    assert_eq!(reparsed.passages["Start"].content, "Hello & welcome");
+    assert_eq!(reparsed.passages["NPC"].tags.as_deref(), Some("npc"));
+    assert!(
+        reparsed.passages["StoryScript"]
+            .content
+            .contains("/* twine-user-script #1: \"logic-a.js\" */")
+    );
+    assert!(
+        reparsed.passages["StoryScript"]
+            .content
+            .contains("/* twine-user-script #2: \"logic-b.js\" */")
+    );
+    assert!(
+        reparsed.passages["StoryScript"]
+            .content
+            .contains("window.answer = 42;")
+    );
+    assert!(
+        reparsed.passages["StoryScript"]
+            .content
+            .contains("window.extra = true;")
+    );
+    assert!(
+        reparsed.passages["StoryStylesheet"]
+            .content
+            .contains("/* twine-user-stylesheet #1: \"theme-a.css\" */")
+    );
+    assert!(
+        reparsed.passages["StoryStylesheet"]
+            .content
+            .contains("/* twine-user-stylesheet #2: \"theme-b.css\" */")
+    );
+    assert!(
+        reparsed.passages["StoryStylesheet"]
+            .content
+            .contains("color: red;")
+    );
+    assert!(
+        reparsed.passages["StoryStylesheet"]
+            .content
+            .contains("color: blue;")
+    );
+}

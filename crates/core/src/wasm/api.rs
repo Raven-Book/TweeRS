@@ -1,6 +1,6 @@
 // WASM API bindings - JavaScript-callable functions
 
-use super::types::{JsBuildConfig, JsBuildOutput, JsParseOutput};
+use super::types::{JsBuildConfig, JsBuildOutput, JsHtmlParseOutput, JsParseOutput};
 use wasm_bindgen::prelude::*;
 
 /// Build a Twee story from the given configuration
@@ -148,4 +148,23 @@ pub fn sort_paths(paths_js: JsValue) -> Result<JsValue, JsValue> {
 
     serde_wasm_bindgen::to_value(&sorted)
         .map_err(|e| JsValue::from_str(&format!("Failed to serialize output: {}", e)))
+}
+
+/// Parse Twine export HTML into passages and story data
+#[wasm_bindgen]
+pub fn parse_html(html: String) -> Result<JsValue, JsValue> {
+    let output = crate::api::parse_html(&html)
+        .map_err(|e| JsValue::from_str(&format!("Parse HTML failed: {}", e)))?;
+
+    let js_output: JsHtmlParseOutput = output.into();
+
+    serde_wasm_bindgen::to_value(&js_output)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize output: {}", e)))
+}
+
+/// Convert Twine export HTML directly to Twee text
+#[wasm_bindgen]
+pub fn html_to_twee(html: String) -> Result<String, JsValue> {
+    crate::api::html_to_twee(&html)
+        .map_err(|e| JsValue::from_str(&format!("HTML to Twee failed: {}", e)))
 }

@@ -1,6 +1,7 @@
 // Stable API facade for external consumers - Pure logic, no I/O
 
 use crate::core::file::{aggregate_sources, parse_bytes_content, parse_text_content};
+use crate::core::html::TwineHtmlParser;
 use crate::core::story::{Passage, StoryData, StoryFormat};
 use indexmap::IndexMap;
 
@@ -107,6 +108,14 @@ pub struct ParseOutput {
     pub story_data: StoryData,
     /// Format info with empty source - needs to be filled before building
     pub format_info: StoryFormatInfo,
+    pub is_debug: bool,
+}
+
+/// Parse output for Twine export HTML input
+#[derive(Clone, Debug)]
+pub struct HtmlParseOutput {
+    pub passages: IndexMap<String, Passage>,
+    pub story_data: StoryData,
     pub is_debug: bool,
 }
 
@@ -270,4 +279,24 @@ pub fn sort_paths(paths: Vec<String>) -> Vec<String> {
     let mut sorted = paths;
     sorted.sort_by(|a, b| compare_paths(a, b));
     sorted
+}
+
+/// Parse Twine export HTML into passages and story data
+pub fn parse_html(
+    html: &str,
+) -> Result<HtmlParseOutput, Box<dyn std::error::Error + Send + Sync>> {
+    let parsed = TwineHtmlParser::parse(html)?;
+    Ok(HtmlParseOutput {
+        passages: parsed.passages,
+        story_data: parsed.story_data,
+        is_debug: parsed.is_debug,
+    })
+}
+
+/// Convert Twine export HTML directly into Twee text
+pub fn html_to_twee(
+    html: &str,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let parsed = parse_html(html)?;
+    Ok(TwineHtmlParser::to_twee(&parsed.passages, &parsed.story_data))
 }

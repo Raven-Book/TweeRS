@@ -64,6 +64,15 @@ export interface JsParseOutput {
 }
 
 /**
+ * HTML parse output containing passages and story data
+ */
+export interface JsHtmlParseOutput {
+  passages: Record<string, JsPassage>;
+  story_data: JsStoryData;
+  is_debug: boolean;
+}
+
+/**
  * Build output containing generated HTML
  */
 export class JsBuildOutput {
@@ -112,3 +121,20 @@ export function passages(sources_js: JsInputSource[]): Record<string, JsPassage>
  */
 export function init_panic_hook(): void;
 
+/**
+ * Parse Twine export HTML into passages and story data
+ *
+ * @param html - Full Twine export HTML
+ * @returns Parsed passages and story data
+ * @throws Error if parsing fails
+ */
+export function parse_html(html: string): JsHtmlParseOutput;
+
+/**
+ * Convert Twine export HTML directly to Twee text
+ *
+ * @param html - Full Twine export HTML
+ * @returns Serialized Twee content
+ * @throws Error if conversion fails
+ */
+export function html_to_twee(html: string): string;

@@ -3,6 +3,8 @@ mod logging;
 mod update;
 
 use clap::Parser;
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use tracing::error;
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -89,6 +91,36 @@ async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )
             .await?;
         }
+        Commands::Html2Twee {
+            input_path,
+            output_path,
+        } => {
+            if input_path.is_dir() {
+                return Err(format!(
+                    "Input path is a directory, expected an HTML file: {}",
+                    input_path.display()
+                )
+                .into());
+            }
+
+            let output_path = resolve_html2twee_output_path(&input_path, output_path)?;
+            let html = std::fs::read_to_string(&input_path)?;
+            let twee = tweers_core::api::html_to_twee(&html)?;
+
+            if output_path.exists() && !confirm_overwrite(&output_path)? {
+                println!("Canceled. Output was not overwritten.");
+                return Ok(());
+            }
+
+            if let Some(parent) = output_path.parent()
+                && !parent.as_os_str().is_empty()
+            {
+                std::fs::create_dir_all(parent)?;
+            }
+
+            std::fs::write(&output_path, twee)?;
+            println!("Output written to: {}", output_path.display());
+        }
         Commands::Pack {
             sources,
             assets_dirs,
@@ -118,4 +150,58 @@ async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         }
     }
     Ok(())
+}
+
+fn resolve_html2twee_output_path(
+    input_path: &Path,
+    output_path: Option<PathBuf>,
+) -> Result<PathBuf, Box<dyn std::error::Error + Send + Sync>> {
+    match output_path {
+        Some(path) => {
+            if path.is_dir() {
+                let file_name = default_html2twee_file_name(input_path)?;
+                Ok(path.join(file_name))
+            } else {
+                Ok(path)
+            }
+        }
+        None => Ok(default_html2twee_output_path(input_path)?),
+    }
+}
+
+fn default_html2twee_output_path(
+    input_path: &Path,
+) -> Result<PathBuf, Box<dyn std::error::Error + Send + Sync>> {
+    let parent = input_path.parent().unwrap_or_else(|| Path::new("."));
+    Ok(parent.join(default_html2twee_file_name(input_path)?))
+}
+
+fn default_html2twee_file_name(
+    input_path: &Path,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let stem = input_path
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.is_empty())
+        .ok_or_else(|| format!("Failed to derive output file name from {}", input_path.display()))?;
+
+    Ok(format!("{stem}.twee"))
+}
+
+fn confirm_overwrite(path: &Path) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    loop {
+        print!("Output already exists: {}. Overwrite? [Y/N]: ", path.display());
+        io::stdout().flush()?;
+
+        let mut response = String::new();
+        io::stdin().read_line(&mut response)?;
+
+        match response.trim().to_ascii_lowercase().as_str() {
+            "y" | "yes" => return Ok(true),
+            "n" | "no" => return Ok(false),
+            _ => {
+                println!("Please enter Y or N.");
+            }
+        }
+    }
 }

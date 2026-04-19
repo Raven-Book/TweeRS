@@ -3,6 +3,7 @@
 ## 快速开始
 
 构建后的 WASM 文件会输出到 `target/wasm/` 目录。
+当前额外提供 `parse_html(html)` 和 `html_to_twee(html)` API，用于将 Twine 导出 HTML 解析或转换回 Twee。
 
 ### Linux/macOS
 

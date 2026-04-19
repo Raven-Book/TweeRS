@@ -26,6 +26,17 @@ pub enum Commands {
         start_passage: Option<String>,
     },
 
+    /// Convert Twine export HTML to a single .twee file
+    #[command(name = "html2twee")]
+    Html2Twee {
+        /// Input HTML file
+        #[arg(required = true)]
+        input_path: PathBuf,
+        /// Output twee path
+        #[clap(short = 'o', long)]
+        output_path: Option<PathBuf>,
+    },
+
     /// Build and pack with compressed assets
     Pack {
         /// Sources

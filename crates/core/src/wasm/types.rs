@@ -73,6 +73,14 @@ pub struct JsParseOutput {
     pub is_debug: bool,
 }
 
+/// JavaScript-friendly HTML parse output
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JsHtmlParseOutput {
+    pub passages: std::collections::HashMap<String, JsPassage>,
+    pub story_data: JsStoryData,
+    pub is_debug: bool,
+}
+
 /// JavaScript-friendly build output
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -220,6 +228,22 @@ impl From<crate::api::ParseOutput> for JsParseOutput {
                 version: parse_output.format_info.version,
                 source: parse_output.format_info.source,
             },
+            is_debug: parse_output.is_debug,
+        }
+    }
+}
+
+impl From<crate::api::HtmlParseOutput> for JsHtmlParseOutput {
+    fn from(parse_output: crate::api::HtmlParseOutput) -> Self {
+        let passages: std::collections::HashMap<String, JsPassage> = parse_output
+            .passages
+            .into_iter()
+            .map(|(k, v)| (k, v.into()))
+            .collect();
+
+        JsHtmlParseOutput {
+            passages,
+            story_data: parse_output.story_data.into(),
             is_debug: parse_output.is_debug,
         }
     }

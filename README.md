@@ -6,6 +6,7 @@
 
 ## 项目简介
 - 将 `.twee` / `.tw` 转为 HTML，支持监听、起始片段指定、媒体 Base64 打包。
+- 将 Twine 导出 HTML 反向转换为单个 `.twee` 文件。
 - `pack` 模式可同时压缩资源，适合分发发布。
 - 内置脚本注入管线，可在读取 Twee 或生成 HTML 后执行自定义 JS。
 - Excel 数据转 JS/HTML：支持对象表、参数表与 HTML 表，生成 JS 赋值或嵌入 `<tweers-exceldata>`。
@@ -28,6 +29,9 @@ tweers build story/ -b -s Start
 
 # 构建并打包资源
 tweers pack story/ -a assets/ -o package.zip
+
+# 将 Twine 导出 HTML 转回 Twee
+tweers html2twee dist/index.html -o dist/story.twee
 ```
 
 ## 命令说明
@@ -48,6 +52,13 @@ tweers pack story/ -a assets/ -o package.zip
   - `-f, --fast-compression` 快速压缩（低质量高速度）
   - `-t, --is-debug` 调试日志
 > 可选安装 ffmpeg 以获得更好的音视频压缩体验。
+
+### html2twee
+- `tweers html2twee <input.html> [-o <output.twee>]`
+- 输入必须是包含 `tw-storydata` / `tw-passagedata` 的 Twine 导出 HTML。
+- 不传 `-o` 时，默认输出到输入 HTML 同目录，并将文件后缀替换为 `.twee`。
+- `-o` 传目录时，会在该目录下使用输入 HTML 的文件名并将后缀替换为 `.twee`。
+- 命令会打印最终输出路径；若目标文件已存在，会提示 `Overwrite? [Y/N]` 确认是否覆盖。
 
 ### update
 - `tweers update [-f]`：更新到最新发布版（`-f` 强制更新）。
