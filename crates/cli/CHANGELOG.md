@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.0
+
+### New Features
+
+- [`6cd8654`](https://github.com/Raven-Book/TweeRS/commit/6cd865497c3b7030e06e0d0edf04813d8aff8b47): Add Tweers Paths provenance passage
+- [`b218bf3`](https://github.com/Raven-Book/TweeRS/commit/b218bf3a2a05bbacdef51d7034a42791f0a74756): Add support for converting HTML back to Twee
+
 ## v1.0.5
 
 ### Bug Fixes
