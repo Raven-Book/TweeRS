@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.1
+
+### Bug Fixes
+
+- [`be3a8e7`](https://github.com/Raven-Book/TweeRS/commit/be3a8e74297536c569a030e0eedd8878067175a3): Fix Harlowe story format parsing
+
 ## v1.1.0
 
 ### New Features
