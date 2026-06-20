@@ -120,3 +120,47 @@ impl StoryFormat {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::StoryFormat;
+
+    #[test]
+    fn parses_story_format_with_unknown_function_before_source() {
+        let format = r#"window.storyFormat({
+            name: "TestFormat",
+            version: "1.0.0",
+            setup: function () {
+                const pattern = /[,{}]/g;
+                const message = `value: ${{ nested: { ok: true } }.nested.ok}`;
+                return { pattern, message };
+            },
+            proofing: false,
+            source: "<html>{{STORY_NAME}}{{STORY_DATA}}</html>",
+            hydrate: function () {
+                return { ignored: true };
+            }
+        });"#;
+
+        let parsed = StoryFormat::parse(format).expect("story format should parse");
+
+        assert_eq!(parsed.name.as_deref(), Some("TestFormat"));
+        assert_eq!(parsed.version, "1.0.0");
+        assert!(!parsed.proofing);
+        assert_eq!(parsed.source, "<html>{{STORY_NAME}}{{STORY_DATA}}</html>");
+    }
+
+    #[test]
+    fn parses_story_format_with_js_string_escapes() {
+        let format = r#"window.storyFormat({
+            "name": "Escaped",
+            "version": "1.0.0",
+            "proofing": false,
+            "source": "line\nbullet:\u2022 quote:\""
+        });"#;
+
+        let parsed = StoryFormat::parse(format).expect("story format should parse");
+
+        assert_eq!(parsed.source, "line\nbullet:• quote:\"");
+    }
+}
