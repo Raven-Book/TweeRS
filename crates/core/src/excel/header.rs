@@ -91,6 +91,8 @@ impl Default for HeaderRegistry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ObjectTableItem {
     pub fields: HashMap<String, String>,
+    #[serde(default)]
+    pub row_number: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -188,8 +190,9 @@ impl HeaderParser for ObjectTableHeaderParser {
         }
 
         let mut items = Vec::new();
-        for row in data_rows {
-            if let Some(item) = Self::parse_object_data_row(row, &headers)? {
+        for (row_offset, row) in data_rows.iter().enumerate() {
+            let row_number = raw_data.end_row + row_offset + 2;
+            if let Some(item) = Self::parse_object_data_row(row, &headers, row_number)? {
                 items.push(item);
             }
         }
@@ -214,6 +217,7 @@ impl ObjectTableHeaderParser {
     fn parse_object_data_row(
         row: &[calamine::Data],
         headers: &[String],
+        row_number: usize,
     ) -> ExcelResult<Option<ObjectTableItem>> {
         if row.is_empty() {
             return Ok(None);
@@ -233,7 +237,7 @@ impl ObjectTableHeaderParser {
             return Ok(None);
         }
 
-        Ok(Some(ObjectTableItem { fields }))
+        Ok(Some(ObjectTableItem { fields, row_number }))
     }
 }
 
@@ -463,5 +467,40 @@ impl HtmlTableHeaderParser {
         }
 
         Ok(Some(HtmlTableItem { fields }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use calamine::Data;
+
+    #[test]
+    fn object_table_items_keep_source_row_numbers_after_last_hash_header() {
+        let raw_data = RawHeaderData {
+            rows: vec![
+                vec!["#save".to_string(), "window.items".to_string()],
+                vec!["#note".to_string(), "ignored".to_string()],
+                vec!["#obj".to_string(), "id".to_string()],
+                vec!["#type".to_string(), "string".to_string()],
+            ],
+            start_row: 2,
+            end_row: 5,
+        };
+
+        let data_rows = [
+            vec![Data::Empty, Data::String("sword".to_string())],
+            vec![],
+            vec![Data::Empty, Data::String("potion".to_string())],
+        ];
+        let row_refs: Vec<&[Data]> = data_rows.iter().map(Vec::as_slice).collect();
+
+        let table_result = ObjectTableHeaderParser
+            .parse_complete_table(&raw_data, &row_refs)
+            .unwrap();
+        let table = table_result.as_any().downcast_ref::<ObjectTable>().unwrap();
+
+        assert_eq!(table.items[0].row_number, 7);
+        assert_eq!(table.items[1].row_number, 9);
     }
 }

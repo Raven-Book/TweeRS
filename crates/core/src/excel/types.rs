@@ -10,6 +10,7 @@ pub enum DataType {
     Bool,
     Boolean,
     Object,
+    Key,
     Array(Box<DataType>),
     Unknown(String),
 }
@@ -26,6 +27,7 @@ impl DataType {
             "string" | "str" => DataType::String,
             "bool" | "boolean" => DataType::Bool,
             "object" | "obj" => DataType::Object,
+            "key" => DataType::Key,
             _ => {
                 if trimmed.starts_with("array<") && trimmed.ends_with(">") {
                     let inner_type = &trimmed[6..trimmed.len() - 1];
@@ -102,6 +104,9 @@ impl DataType {
             DataType::String => {
                 format!("\"{}\"", value.replace('"', "\\\""))
             }
+            DataType::Key => {
+                format!("\"{}\"", value.replace('"', "\\\""))
+            }
             DataType::Unknown(_) => {
                 format!("\"{}\"", value.replace('"', "\\\""))
             }
@@ -126,6 +131,11 @@ impl DataType {
     /// Check if this type represents an array type
     pub fn is_array(&self) -> bool {
         matches!(self, DataType::Array(_))
+    }
+
+    /// Check if this type marks the object table key column
+    pub fn is_key(&self) -> bool {
+        matches!(self, DataType::Key)
     }
 }
 
@@ -185,6 +195,7 @@ mod tests {
         assert_eq!(DataType::parse("string"), DataType::String);
         assert_eq!(DataType::parse("bool"), DataType::Bool);
         assert_eq!(DataType::parse("object"), DataType::Object);
+        assert_eq!(DataType::parse("key"), DataType::Key);
 
         if let DataType::Array(element_type) = DataType::parse("array<int>") {
             assert_eq!(*element_type, DataType::Int);
@@ -211,6 +222,9 @@ mod tests {
 
         let string_type = DataType::String;
         assert_eq!(string_type.format_value("hello"), "\"hello\"");
+
+        let key_type = DataType::Key;
+        assert_eq!(key_type.format_value("abc"), "\"abc\"");
     }
 
     #[test]

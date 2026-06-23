@@ -66,17 +66,58 @@ pub struct AllTemplateProcessor;
 impl AllTemplateProcessor {
     /// Generate all# template: all#Item.addAll($content)
     pub fn generate(table: &ObjectTable, target: &str) -> ExcelResult<String> {
-        let items_json = Self::generate_items_json(table)?;
-        let expanded = target.replace("$content", &items_json);
+        let content_json = Self::generate_content_json(table)?;
+        let expanded = target.replace("$content", &content_json);
         Ok(format!("{expanded};\n\n"))
     }
 
+    /// Generate table content as an array or keyed object, depending on #type.
+    fn generate_content_json(table: &ObjectTable) -> ExcelResult<String> {
+        let type_registry = TypeRegistry::new(table.headers.clone(), table.type_defs.clone());
+
+        match Self::find_key_column(table, &type_registry)? {
+            Some(key_header) => Self::generate_keyed_object_json(table, &type_registry, key_header),
+            None => Self::generate_items_json(table, &type_registry),
+        }
+    }
+
+    fn find_key_column<'a>(
+        table: &'a ObjectTable,
+        type_registry: &TypeRegistry,
+    ) -> ExcelResult<Option<&'a str>> {
+        let key_columns: Vec<usize> = type_registry
+            .type_defs
+            .iter()
+            .enumerate()
+            .filter_map(|(index, data_type)| data_type.is_key().then_some(index))
+            .collect();
+
+        if key_columns.len() > 1 {
+            return Err(ExcelParseError::data_validation_error(
+                "Object table can only contain one key type column",
+            ));
+        }
+
+        if let Some(key_index) = key_columns.first() {
+            let key_header = table.headers.get(*key_index).ok_or_else(|| {
+                ExcelParseError::data_validation_error(
+                    "Key type column does not have a matching object header",
+                )
+            })?;
+
+            Ok(Some(key_header.as_str()))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Generate items as JSON array for all# templates
-    fn generate_items_json(table: &ObjectTable) -> ExcelResult<String> {
+    fn generate_items_json(
+        table: &ObjectTable,
+        type_registry: &TypeRegistry,
+    ) -> ExcelResult<String> {
         let mut js_code = String::new();
         js_code.push_str("[\n");
-
-        let type_registry = TypeRegistry::new(table.headers.clone(), table.type_defs.clone());
 
         for (i, item) in table.items.iter().enumerate() {
             if i > 0 {
@@ -85,7 +126,7 @@ impl AllTemplateProcessor {
             js_code.push_str("    {\n");
 
             let field_parts =
-                ArrayHandler::process_array_fields(item, &table.headers, &type_registry)?;
+                ArrayHandler::process_array_fields(item, &table.headers, type_registry)?;
 
             js_code.push_str(&field_parts.join(",\n"));
             js_code.push_str("\n    }");
@@ -93,6 +134,115 @@ impl AllTemplateProcessor {
 
         js_code.push_str("\n]");
         Ok(js_code)
+    }
+
+    fn generate_keyed_object_json(
+        table: &ObjectTable,
+        type_registry: &TypeRegistry,
+        key_header: &str,
+    ) -> ExcelResult<String> {
+        let mut entries: Vec<(String, String)> = Vec::new();
+
+        for item in &table.items {
+            let key_value = Self::key_value_for_item(item, key_header);
+            let item_with_key = Self::item_with_key_value(item, key_header, &key_value);
+            let field_parts =
+                ArrayHandler::process_array_fields(&item_with_key, &table.headers, type_registry)?;
+
+            let mut item_json = String::new();
+            item_json.push_str("    {\n");
+            item_json.push_str(&field_parts.join(",\n"));
+            item_json.push_str("\n    }");
+
+            if let Some(existing_index) = entries
+                .iter()
+                .position(|(existing_key, _)| existing_key == &key_value)
+            {
+                entries.remove(existing_index);
+            }
+
+            entries.push((key_value, item_json));
+        }
+
+        let mut js_code = String::new();
+        js_code.push_str("{\n");
+
+        for (i, (key_value, item_json)) in entries.iter().enumerate() {
+            if i > 0 {
+                js_code.push_str(",\n");
+            }
+
+            js_code.push_str(&format!(
+                "    {}: {}",
+                Self::quote_key(key_value),
+                Self::indent_nested_item(item_json)
+            ));
+        }
+
+        js_code.push_str("\n}");
+
+        Ok(js_code)
+    }
+
+    fn key_value_for_item(item: &ObjectTableItem, key_header: &str) -> String {
+        item.fields
+            .get(key_header)
+            .filter(|value| {
+                let trimmed = value.trim();
+                !trimmed.is_empty() && !trimmed.eq_ignore_ascii_case("null")
+            })
+            .cloned()
+            .unwrap_or_else(|| format!("__auto_{}", item.row_number.max(1)))
+    }
+
+    fn item_with_key_value(
+        item: &ObjectTableItem,
+        key_header: &str,
+        key_value: &str,
+    ) -> ObjectTableItem {
+        let mut fields = item.fields.clone();
+        fields.insert(key_header.to_string(), key_value.to_string());
+        ObjectTableItem {
+            fields,
+            row_number: item.row_number,
+        }
+    }
+
+    fn quote_key(key: &str) -> String {
+        format!("\"{}\"", Self::escape_js_string(key))
+    }
+
+    fn escape_js_string(value: &str) -> String {
+        let mut escaped = String::new();
+
+        for ch in value.chars() {
+            match ch {
+                '\\' => escaped.push_str("\\\\"),
+                '"' => escaped.push_str("\\\""),
+                '\n' => escaped.push_str("\\n"),
+                '\r' => escaped.push_str("\\r"),
+                '\t' => escaped.push_str("\\t"),
+                _ => escaped.push(ch),
+            }
+        }
+
+        escaped
+    }
+
+    fn indent_nested_item(item_json: &str) -> String {
+        let mut lines = item_json.lines();
+        let mut indented = String::new();
+
+        if let Some(first_line) = lines.next() {
+            indented.push_str(first_line.trim_start());
+        }
+
+        for line in lines {
+            indented.push('\n');
+            indented.push_str(line);
+        }
+
+        indented
     }
 }
 
@@ -162,8 +312,8 @@ pub struct DefaultTemplateProcessor;
 impl DefaultTemplateProcessor {
     /// Generate default window.xx template
     pub fn generate(table: &ObjectTable, target: &str) -> ExcelResult<String> {
-        let items_json = AllTemplateProcessor::generate_items_json(table)?;
-        Ok(format!("{target} = {items_json};\n\n"))
+        let content_json = AllTemplateProcessor::generate_content_json(table)?;
+        Ok(format!("{target} = {content_json};\n\n"))
     }
 }
 
@@ -171,6 +321,20 @@ impl DefaultTemplateProcessor {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+
+    fn object_item(fields: &[(&str, &str)]) -> ObjectTableItem {
+        object_item_at(1, fields)
+    }
+
+    fn object_item_at(row_number: usize, fields: &[(&str, &str)]) -> ObjectTableItem {
+        ObjectTableItem {
+            fields: fields
+                .iter()
+                .map(|(key, value)| (key.to_string(), value.to_string()))
+                .collect(),
+            row_number,
+        }
+    }
 
     #[test]
     fn test_save_template_parsing() {
@@ -218,6 +382,7 @@ mod tests {
             type_defs: vec!["int".to_string(), "string".to_string()],
             items: vec![ObjectTableItem {
                 fields: item_fields,
+                row_number: 1,
             }],
         };
 
@@ -258,9 +423,11 @@ mod tests {
             items: vec![
                 ObjectTableItem {
                     fields: item_fields1,
+                    row_number: 1,
                 },
                 ObjectTableItem {
                     fields: item_fields2,
+                    row_number: 2,
                 },
             ],
         };
@@ -287,6 +454,7 @@ mod tests {
             type_defs: vec!["int".to_string(), "string".to_string()],
             items: vec![ObjectTableItem {
                 fields: item_fields,
+                row_number: 1,
             }],
         };
 
@@ -299,6 +467,102 @@ mod tests {
     }
 
     #[test]
+    fn test_default_template_generation_with_key_type() {
+        let object_table = ObjectTable {
+            save_var: "window.items".to_string(),
+            table_type: "obj".to_string(),
+            headers: vec!["id".to_string(), "name".to_string()],
+            type_defs: vec!["key".to_string(), "string".to_string()],
+            items: vec![object_item(&[("id", "sword"), ("name", "Sword")])],
+        };
+
+        let result = DefaultTemplateProcessor::generate(&object_table, "window.items").unwrap();
+
+        assert!(result.contains("window.items = {\n"));
+        assert!(result.contains(
+            "    \"sword\": {\n        id: \"sword\",\n        name: \"Sword\"\n    }\n};"
+        ));
+    }
+
+    #[test]
+    fn test_keyed_object_quotes_auto_keys_and_overwrites_duplicates() {
+        let object_table = ObjectTable {
+            save_var: "window.items".to_string(),
+            table_type: "obj".to_string(),
+            headers: vec!["id".to_string(), "name".to_string()],
+            type_defs: vec!["key".to_string(), "string".to_string()],
+            items: vec![
+                object_item_at(4, &[("id", "123"), ("name", "Number")]),
+                object_item_at(5, &[("name", "Auto")]),
+                object_item_at(6, &[("id", "a\"b"), ("name", "Quote")]),
+                object_item_at(7, &[("id", "123"), ("name", "Override")]),
+            ],
+        };
+
+        let result = DefaultTemplateProcessor::generate(&object_table, "window.items").unwrap();
+
+        assert!(!result.contains("Number"));
+        assert!(result.contains("    \"__auto_5\": {\n        id: \"__auto_5\""));
+        assert!(result.contains("    \"a\\\"b\": {\n        id: \"a\\\"b\""));
+        assert!(
+            result.contains("    \"123\": {\n        id: \"123\",\n        name: \"Override\"")
+        );
+    }
+
+    #[test]
+    fn test_all_template_generation_with_key_type() {
+        let object_table = ObjectTable {
+            save_var: "all#Item.addAll($content)".to_string(),
+            table_type: "obj".to_string(),
+            headers: vec!["id".to_string(), "name".to_string()],
+            type_defs: vec!["key".to_string(), "string".to_string()],
+            items: vec![object_item(&[("id", "sword"), ("name", "Sword")])],
+        };
+
+        let result =
+            AllTemplateProcessor::generate(&object_table, "Item.addAll($content)").unwrap();
+
+        assert!(result.contains("Item.addAll({\n"));
+        assert!(result.contains("    \"sword\": {\n        id: \"sword\""));
+    }
+
+    #[test]
+    fn test_multiple_key_type_columns_error() {
+        let object_table = ObjectTable {
+            save_var: "window.items".to_string(),
+            table_type: "obj".to_string(),
+            headers: vec!["id".to_string(), "slug".to_string()],
+            type_defs: vec!["key".to_string(), "key".to_string()],
+            items: vec![object_item(&[("id", "sword"), ("slug", "iron-sword")])],
+        };
+
+        let result = DefaultTemplateProcessor::generate(&object_table, "window.items");
+
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("can only contain one key type column")
+        );
+    }
+
+    #[test]
+    fn test_single_template_generation_with_key_type_stays_row_based() {
+        let object_table = ObjectTable {
+            save_var: "single#Item.add($id, $name)".to_string(),
+            table_type: "obj".to_string(),
+            headers: vec!["id".to_string(), "name".to_string()],
+            type_defs: vec!["key".to_string(), "string".to_string()],
+            items: vec![object_item(&[("id", "sword"), ("name", "Sword")])],
+        };
+
+        let result =
+            SingleTemplateProcessor::generate(&object_table, "Item.add($id, $name)").unwrap();
+
+        assert_eq!(result, "Item.add(\"sword\", \"Sword\");\n\n");
+    }
+
+    #[test]
     fn test_single_template_params_expansion() {
         let mut item_fields = HashMap::new();
         item_fields.insert("name".to_string(), "testItem".to_string());
@@ -307,6 +571,7 @@ mod tests {
 
         let item = ObjectTableItem {
             fields: item_fields,
+            row_number: 1,
         };
         let table = ObjectTable {
             save_var: "test".to_string(),
@@ -347,6 +612,7 @@ mod tests {
             type_defs: vec!["int".to_string(), "string".to_string()],
             items: vec![ObjectTableItem {
                 fields: item_fields,
+                row_number: 1,
             }],
         };
 

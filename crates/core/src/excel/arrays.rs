@@ -246,6 +246,7 @@ mod tests {
 
         let item = ObjectTableItem {
             fields: item_fields,
+            row_number: 1,
         };
         let headers = vec![
             "id".to_string(),
@@ -277,6 +278,7 @@ mod tests {
 
         let item = ObjectTableItem {
             fields: item_fields,
+            row_number: 1,
         };
         let headers = vec!["tags#0".to_string()];
         let type_defs = vec!["string".to_string()];
