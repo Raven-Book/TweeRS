@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0
+
+### New Features
+
+- [`d7c6025`](https://github.com/Raven-Book/TweeRS/commit/d7c6025ab559274cf04303d187f32c39129a9822): Add key type support for object schemas
+
 ## v1.0.1
 
 ### Bug Fixes
